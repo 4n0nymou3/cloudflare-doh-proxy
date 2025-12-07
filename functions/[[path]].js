@@ -12,7 +12,7 @@ export async function onRequest(context) {
   const { request, env } = context;
   
   const url = new URL(request.url);
-  
+
   if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   }
@@ -54,7 +54,7 @@ export async function onRequest(context) {
                 upstreamUrl.searchParams.set(key, value);
               }
             });
-            
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
             
@@ -83,7 +83,6 @@ export async function onRequest(context) {
         }
       } else if (request.method === 'POST') {
         const contentType = request.headers.get('Content-Type');
-        
         if (contentType !== 'application/dns-message') {
           throw new Error('Invalid Content-Type');
         }
@@ -145,7 +144,6 @@ export async function onRequest(context) {
           'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
         }
       });
-      
     } catch (error) {
       return new Response('DNS query failed: ' + error.message, { 
         status: 500,
@@ -172,11 +170,10 @@ function generateAppleProfile(requestUrl) {
   const baseUrl = new URL(requestUrl);
   const dohUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const hostname = baseUrl.hostname;
-  
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
   const uuid3 = crypto.randomUUID();
-  
+
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -376,6 +373,8 @@ function getHomePage(requestUrl) {
             font-family: monospace;
             font-size: 0.9em;
             border: 1px solid #1e293b;
+            direction: ltr;
+            text-align: left;
         }
         .warning {
             background: rgba(180, 83, 9, 0.2);
@@ -417,6 +416,8 @@ function getHomePage(requestUrl) {
             border: 1px solid #1e293b;
             white-space: pre-wrap;
             word-wrap: break-word;
+            direction: ltr;
+            text-align: left;
         }
         .copy-btn, .download-btn {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -630,6 +631,7 @@ function getHomePage(requestUrl) {
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
             textArea.select();
+            
             try {
                 document.execCommand('copy');
                 btn.classList.add('copied');
