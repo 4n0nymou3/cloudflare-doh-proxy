@@ -8,19 +8,31 @@ const UPSTREAM_DNS_PROVIDERS = [
 const DNS_CACHE_TTL = 300;
 const REQUEST_TIMEOUT = 5000;
 const MAX_RETRIES = 2;
+const RATE_LIMIT_REQUESTS = 100;
+const RATE_LIMIT_WINDOW = 60000;
+const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
 const MAX_DNS_RESPONSE_SIZE = 4096;
 const MAX_DNS_REQUEST_SIZE = 512;
 
 const dnsCache = new Map();
+const rateLimitMap = new Map();
+let lastCleanupTime = Date.now();
 
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, env } = context;
   const url = new URL(request.url);
 
   if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   }
   
+  const clientIP = request.headers.get('CF-Connecting-IP') || 
+                   request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
+                   request.headers.get('X-Real-IP') ||
+                   'unknown';
+
+  cleanupRateLimitMap();
+
   if (url.pathname !== '/dns-query') {
     return new Response(getHomePage(request.url), {
       status: 200,
@@ -31,6 +43,17 @@ export async function onRequest(context) {
         'X-XSS-Protection': '1; mode=block',
         'Referrer-Policy': 'no-referrer',
         'Cache-Control': 'public, max-age=3600'
+      }
+    });
+  }
+
+  if (!checkRateLimit(clientIP)) {
+    return new Response('Rate limit exceeded. Please try again later.', {
+      status: 429,
+      headers: {
+        'Content-Type': 'text/plain',
+        'Retry-After': '60',
+        'Cache-Control': 'no-store'
       }
     });
   }
@@ -80,6 +103,12 @@ export async function onRequest(context) {
       }
     });
   } catch (error) {
+    console.error('DNS query error:', error.message, {
+      method: request.method,
+      clientIP: clientIP,
+      timestamp: new Date().toISOString()
+    });
+
     return new Response('DNS query failed: ' + error.message, { 
       status: 500,
       headers: {
@@ -97,6 +126,7 @@ function generateAppleProfile(requestUrl) {
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
   const uuid3 = crypto.randomUUID();
+
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -143,6 +173,7 @@ function generateAppleProfile(requestUrl) {
     <integer>1</integer>
 </dict>
 </plist>`;
+
   return new Response(mobileconfig, {
     status: 200,
     headers: {
@@ -194,6 +225,7 @@ async function handleGetRequest(url) {
       }
     }, REQUEST_TIMEOUT);
   });
+
   const responseBody = await response.arrayBuffer();
   setCachedResponse(cacheKey, responseBody);
   
@@ -237,6 +269,7 @@ async function handlePostRequest(request) {
       body: body
     }, REQUEST_TIMEOUT);
   });
+
   const responseBody = await response.arrayBuffer();
   setCachedResponse(cacheKey, responseBody);
   
@@ -248,6 +281,7 @@ async function handlePostRequest(request) {
 
 async function queryDNSWithRace(providers, fetchFunction) {
   const errors = [];
+  
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const promises = providers.map(async (provider) => {
       try {
@@ -271,6 +305,7 @@ async function queryDNSWithRace(providers, fetchFunction) {
         throw error;
       }
     });
+
     try {
       return await Promise.any(promises);
     } catch (aggregateError) {
@@ -281,6 +316,7 @@ async function queryDNSWithRace(providers, fetchFunction) {
     }
   }
 
+  console.error('All DNS providers failed:', errors);
   throw new Error('All upstream DNS servers failed after retries');
 }
 
@@ -317,9 +353,64 @@ function handleOptions() {
   });
 }
 
+function checkRateLimit(clientIP) {
+  const now = Date.now();
+  const clientData = rateLimitMap.get(clientIP);
+  
+  if (!clientData) {
+    rateLimitMap.set(clientIP, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW
+    });
+    return true;
+  }
+  
+  if (now > clientData.resetTime) {
+    rateLimitMap.set(clientIP, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW
+    });
+    return true;
+  }
+  
+  if (clientData.count >= RATE_LIMIT_REQUESTS) {
+    return false;
+  }
+  
+  clientData.count++;
+  return true;
+}
+
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  
+  if (now - lastCleanupTime < RATE_LIMIT_CLEANUP_INTERVAL) {
+    return;
+  }
+  
+  lastCleanupTime = now;
+  
+  for (const [clientIP, data] of rateLimitMap.entries()) {
+    if (now > data.resetTime) {
+      rateLimitMap.delete(clientIP);
+    }
+  }
+  
+  if (dnsCache.size > 1000) {
+    const entriesToDelete = dnsCache.size - 500;
+    let deleted = 0;
+    for (const key of dnsCache.keys()) {
+      if (deleted >= entriesToDelete) break;
+      dnsCache.delete(key);
+      deleted++;
+    }
+  }
+}
+
 function getCachedResponse(key) {
   const cached = dnsCache.get(key);
   if (!cached) return null;
+  
   if (Date.now() > cached.expiresAt) {
     dnsCache.delete(key);
     return null;
@@ -329,12 +420,6 @@ function getCachedResponse(key) {
 }
 
 function setCachedResponse(key, data) {
-  if (dnsCache.size > 1000) {
-    const keys = dnsCache.keys();
-    for (let i = 0; i < 200; i++) {
-        dnsCache.delete(keys.next().value);
-    }
-  }
   const expiresAt = Date.now() + (DNS_CACHE_TTL * 1000);
   dnsCache.set(key, { data, expiresAt });
 }
@@ -343,6 +428,7 @@ function isValidBase64Url(str) {
   if (!str || str.length === 0 || str.length > 2048) {
     return false;
   }
+  
   const base64UrlRegex = /^[A-Za-z0-9_-]+={0,2}$/;
   return base64UrlRegex.test(str);
 }
