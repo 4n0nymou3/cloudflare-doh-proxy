@@ -6,12 +6,17 @@ const UPSTREAM_DNS_PROVIDERS = [
 ];
 
 const DNS_CACHE_TTL = 300;
-const REQUEST_TIMEOUT = 10000;
-const MAX_RETRIES = 3;
+const REQUEST_TIMEOUT = 5000;
+const MAX_RETRIES = 2;
 const RATE_LIMIT_REQUESTS = 100;
 const RATE_LIMIT_WINDOW = 60000;
+const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
+const MAX_DNS_RESPONSE_SIZE = 4096;
+const MAX_DNS_REQUEST_SIZE = 512;
 
+const dnsCache = new Map();
 const rateLimitMap = new Map();
+let lastCleanupTime = Date.now();
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
@@ -24,14 +29,19 @@ async function handleRequest(request) {
     return generateAppleProfile(request.url);
   }
   
-  const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const clientIP = request.headers.get('CF-Connecting-IP') || 
+                   request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 
+                   'unknown';
+
+  cleanupRateLimitMap();
 
   if (!checkRateLimit(clientIP)) {
     return new Response('Rate limit exceeded. Please try again later.', {
       status: 429,
       headers: {
         'Content-Type': 'text/plain',
-        'Retry-After': '60'
+        'Retry-After': '60',
+        'Cache-Control': 'no-store'
       }
     });
   }
@@ -44,7 +54,8 @@ async function handleRequest(request) {
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
-        'Referrer-Policy': 'no-referrer'
+        'Referrer-Policy': 'no-referrer',
+        'Cache-Control': 'public, max-age=3600'
       }
     });
   }
@@ -64,13 +75,24 @@ async function handleRequest(request) {
       return new Response('Method not allowed', { 
         status: 405,
         headers: {
-          'Allow': 'GET, POST, OPTIONS'
+          'Allow': 'GET, POST, OPTIONS',
+          'Content-Type': 'text/plain'
         }
       });
     }
 
-    return new Response(dnsResponse.body, {
-      status: dnsResponse.status,
+    if (!dnsResponse || !dnsResponse.body) {
+      throw new Error('Invalid DNS response received');
+    }
+
+    const responseBody = await dnsResponse.arrayBuffer();
+    
+    if (responseBody.byteLength > MAX_DNS_RESPONSE_SIZE) {
+      throw new Error('DNS response too large');
+    }
+
+    return new Response(responseBody, {
+      status: 200,
       headers: {
         'Content-Type': 'application/dns-message',
         'Access-Control-Allow-Origin': '*',
@@ -78,14 +100,22 @@ async function handleRequest(request) {
         'Access-Control-Allow-Headers': 'Content-Type',
         'Cache-Control': `public, max-age=${DNS_CACHE_TTL}`,
         'X-Content-Type-Options': 'nosniff',
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+        'X-DNS-Proxy': 'Cloudflare-Worker'
       }
     });
   } catch (error) {
+    console.error('DNS query error:', error.message, {
+      method: request.method,
+      clientIP: clientIP,
+      timestamp: new Date().toISOString()
+    });
+
     return new Response('DNS query failed: ' + error.message, { 
       status: 500,
       headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': 'text/plain',
+        'Cache-Control': 'no-store'
       }
     });
   }
@@ -151,7 +181,9 @@ function generateAppleProfile(requestUrl) {
     headers: {
       'Content-Type': 'application/x-apple-aspen-config; charset=utf-8',
       'Content-Disposition': `attachment; filename="doh-proxy-${hostname}.mobileconfig"`,
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   });
 }
@@ -167,46 +199,42 @@ async function handleGetRequest(url) {
     throw new Error('Invalid dns parameter format');
   }
 
-  for (let i = 0; i < UPSTREAM_DNS_PROVIDERS.length; i++) {
-    try {
-      const upstreamUrl = new URL(UPSTREAM_DNS_PROVIDERS[i]);
-      upstreamUrl.searchParams.set('dns', dnsParam);
-      
-      url.searchParams.forEach((value, key) => {
-        if (key !== 'dns') {
-          upstreamUrl.searchParams.set(key, value);
-        }
-      });
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-      
-      const response = await fetch(upstreamUrl.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/dns-message',
-          'User-Agent': 'DoH-Proxy-Worker/1.0'
-        },
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        return response;
-      }
-      
-      if (i === UPSTREAM_DNS_PROVIDERS.length - 1) {
-        throw new Error('All upstream DNS servers failed');
-      }
-      
-    } catch (error) {
-      if (i === UPSTREAM_DNS_PROVIDERS.length - 1) {
-        throw error;
-      }
-      continue;
-    }
+  const cacheKey = `GET:${dnsParam}`;
+  const cachedResponse = getCachedResponse(cacheKey);
+  if (cachedResponse) {
+    return new Response(cachedResponse, {
+      status: 200,
+      headers: { 'X-Cache': 'HIT' }
+    });
   }
+
+  const providers = shuffleArray([...UPSTREAM_DNS_PROVIDERS]);
+  const response = await queryDNSWithRace(providers, (provider) => {
+    const upstreamUrl = new URL(provider);
+    upstreamUrl.searchParams.set('dns', dnsParam);
+    
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'dns') {
+        upstreamUrl.searchParams.set(key, value);
+      }
+    });
+
+    return fetchWithTimeout(upstreamUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/dns-message',
+        'User-Agent': 'DoH-Proxy-Worker/2.0'
+      }
+    }, REQUEST_TIMEOUT);
+  });
+
+  const responseBody = await response.arrayBuffer();
+  setCachedResponse(cacheKey, responseBody);
+  
+  return new Response(responseBody, {
+    status: 200,
+    headers: { 'X-Cache': 'MISS' }
+  });
 }
 
 async function handlePostRequest(request) {
@@ -217,42 +245,100 @@ async function handlePostRequest(request) {
 
   const body = await request.arrayBuffer();
   
-  if (body.byteLength === 0 || body.byteLength > 512) {
-    throw new Error('Invalid DNS message size');
+  if (body.byteLength === 0 || body.byteLength > MAX_DNS_REQUEST_SIZE) {
+    throw new Error(`Invalid DNS message size: ${body.byteLength} bytes`);
   }
 
-  for (let i = 0; i < UPSTREAM_DNS_PROVIDERS.length; i++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-      
-      const response = await fetch(UPSTREAM_DNS_PROVIDERS[i], {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/dns-message',
-          'Accept': 'application/dns-message',
-          'User-Agent': 'DoH-Proxy-Worker/1.0'
-        },
-        body: body,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        return response;
-      }
-      
-      if (i === UPSTREAM_DNS_PROVIDERS.length - 1) {
-        throw new Error('All upstream DNS servers failed');
-      }
-      
-    } catch (error) {
-      if (i === UPSTREAM_DNS_PROVIDERS.length - 1) {
+  const cacheKey = `POST:${arrayBufferToBase64(body)}`;
+  const cachedResponse = getCachedResponse(cacheKey);
+  if (cachedResponse) {
+    return new Response(cachedResponse, {
+      status: 200,
+      headers: { 'X-Cache': 'HIT' }
+    });
+  }
+
+  const providers = shuffleArray([...UPSTREAM_DNS_PROVIDERS]);
+  const response = await queryDNSWithRace(providers, (provider) => {
+    return fetchWithTimeout(provider, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/dns-message',
+        'Accept': 'application/dns-message',
+        'User-Agent': 'DoH-Proxy-Worker/2.0',
+        'Content-Length': body.byteLength.toString()
+      },
+      body: body
+    }, REQUEST_TIMEOUT);
+  });
+
+  const responseBody = await response.arrayBuffer();
+  setCachedResponse(cacheKey, responseBody);
+  
+  return new Response(responseBody, {
+    status: 200,
+    headers: { 'X-Cache': 'MISS' }
+  });
+}
+
+async function queryDNSWithRace(providers, fetchFunction) {
+  const errors = [];
+  
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const promises = providers.map(async (provider) => {
+      try {
+        const response = await fetchFunction(provider);
+        
+        if (response.ok) {
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('application/dns-message')) {
+            return response;
+          }
+          throw new Error(`Invalid content type: ${contentType}`);
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      } catch (error) {
+        errors.push({
+          provider: provider,
+          attempt: attempt,
+          error: error.message
+        });
         throw error;
       }
-      continue;
+    });
+
+    try {
+      return await Promise.any(promises);
+    } catch (aggregateError) {
+      if (attempt < MAX_RETRIES) {
+        await sleep(Math.min(100 * Math.pow(2, attempt), 1000));
+        continue;
+      }
     }
+  }
+
+  console.error('All DNS providers failed:', errors);
+  throw new Error('All upstream DNS servers failed after retries');
+}
+
+async function fetchWithTimeout(url, options, timeout) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -263,7 +349,8 @@ function handleOptions() {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400'
+      'Access-Control-Max-Age': '86400',
+      'Cache-Control': 'public, max-age=86400'
     }
   });
 }
@@ -296,9 +383,78 @@ function checkRateLimit(clientIP) {
   return true;
 }
 
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  
+  if (now - lastCleanupTime < RATE_LIMIT_CLEANUP_INTERVAL) {
+    return;
+  }
+  
+  lastCleanupTime = now;
+  
+  for (const [clientIP, data] of rateLimitMap.entries()) {
+    if (now > data.resetTime) {
+      rateLimitMap.delete(clientIP);
+    }
+  }
+  
+  if (dnsCache.size > 1000) {
+    const entriesToDelete = dnsCache.size - 500;
+    let deleted = 0;
+    for (const key of dnsCache.keys()) {
+      if (deleted >= entriesToDelete) break;
+      dnsCache.delete(key);
+      deleted++;
+    }
+  }
+}
+
+function getCachedResponse(key) {
+  const cached = dnsCache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() > cached.expiresAt) {
+    dnsCache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+}
+
+function setCachedResponse(key, data) {
+  const expiresAt = Date.now() + (DNS_CACHE_TTL * 1000);
+  dnsCache.set(key, { data, expiresAt });
+}
+
 function isValidBase64Url(str) {
-  const base64UrlRegex = /^[A-Za-z0-9_-]+$/;
+  if (!str || str.length === 0 || str.length > 2048) {
+    return false;
+  }
+  
+  const base64UrlRegex = /^[A-Za-z0-9_-]+={0,2}$/;
   return base64UrlRegex.test(str);
+}
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getHomePage(requestUrl) {
