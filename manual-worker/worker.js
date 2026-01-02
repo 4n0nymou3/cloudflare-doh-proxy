@@ -1,22 +1,40 @@
 const UPSTREAM_DNS_PROVIDERS = [
-  'https://cloudflare-dns.com/dns-query',
-  'https://dns.google/dns-query',
-  'https://dns.quad9.net/dns-query',
-  'https://doh.opendns.com/dns-query'
+  { url: 'https://cloudflare-dns.com/dns-query', priority: 1, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
+  { url: 'https://dns.google/dns-query', priority: 2, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
+  { url: 'https://dns.quad9.net/dns-query', priority: 3, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
+  { url: 'https://doh.opendns.com/dns-query', priority: 4, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 }
 ];
 
-const DNS_CACHE_TTL = 300;
-const REQUEST_TIMEOUT = 5000;
-const MAX_RETRIES = 2;
+const DNS_CACHE_TTL_MIN = 60;
+const DNS_CACHE_TTL_MAX = 3600;
+const DNS_CACHE_TTL_DEFAULT = 300;
+const REQUEST_TIMEOUT_MIN = 8000;
+const REQUEST_TIMEOUT_MAX = 15000;
+const MAX_RETRIES = 3;
 const RATE_LIMIT_REQUESTS = 100;
 const RATE_LIMIT_WINDOW = 60000;
 const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
 const MAX_DNS_RESPONSE_SIZE = 4096;
 const MAX_DNS_REQUEST_SIZE = 512;
+const HEALTH_CHECK_INTERVAL = 300000;
+const CIRCUIT_BREAKER_THRESHOLD = 5;
+const CIRCUIT_BREAKER_TIMEOUT = 60000;
+const MAX_CONCURRENT_REQUESTS = 50;
 
 const dnsCache = new Map();
 const rateLimitMap = new Map();
+const pendingRequests = new Map();
+const providerMetrics = new Map();
 let lastCleanupTime = Date.now();
+let lastHealthCheck = Date.now();
+let concurrentRequests = 0;
+
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
+];
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
@@ -34,6 +52,7 @@ async function handleRequest(request) {
                    'unknown';
 
   cleanupRateLimitMap();
+  performHealthCheckIfNeeded();
 
   if (!checkRateLimit(clientIP)) {
     return new Response('Rate limit exceeded. Please try again later.', {
@@ -41,6 +60,17 @@ async function handleRequest(request) {
       headers: {
         'Content-Type': 'text/plain',
         'Retry-After': '60',
+        'Cache-Control': 'no-store'
+      }
+    });
+  }
+
+  if (concurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+    return new Response('Server busy. Please try again.', {
+      status: 503,
+      headers: {
+        'Content-Type': 'text/plain',
+        'Retry-After': '5',
         'Cache-Control': 'no-store'
       }
     });
@@ -63,6 +93,8 @@ async function handleRequest(request) {
   if (request.method === 'OPTIONS') {
     return handleOptions();
   }
+
+  concurrentRequests++;
 
   try {
     let dnsResponse;
@@ -91,6 +123,8 @@ async function handleRequest(request) {
       throw new Error('DNS response too large');
     }
 
+    const cacheTTL = calculateDynamicTTL(responseBody);
+
     return new Response(responseBody, {
       status: 200,
       headers: {
@@ -98,7 +132,7 @@ async function handleRequest(request) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': `public, max-age=${DNS_CACHE_TTL}`,
+        'Cache-Control': `public, max-age=${cacheTTL}`,
         'X-Content-Type-Options': 'nosniff',
         'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
         'X-DNS-Proxy': 'Cloudflare-Worker'
@@ -118,6 +152,8 @@ async function handleRequest(request) {
         'Cache-Control': 'no-store'
       }
     });
+  } finally {
+    concurrentRequests--;
   }
 }
 
@@ -202,6 +238,12 @@ async function handleGetRequest(url) {
   }
 
   const cacheKey = `GET:${dnsParam}`;
+
+  const pending = pendingRequests.get(cacheKey);
+  if (pending) {
+    return pending;
+  }
+
   const cachedResponse = getCachedResponse(cacheKey);
   if (cachedResponse) {
     return new Response(cachedResponse, {
@@ -210,33 +252,44 @@ async function handleGetRequest(url) {
     });
   }
 
-  const providers = shuffleArray([...UPSTREAM_DNS_PROVIDERS]);
-  const response = await queryDNSWithRace(providers, (provider) => {
-    const upstreamUrl = new URL(provider);
-    upstreamUrl.searchParams.set('dns', dnsParam);
-    
-    url.searchParams.forEach((value, key) => {
-      if (key !== 'dns') {
-        upstreamUrl.searchParams.set(key, value);
-      }
-    });
+  const requestPromise = (async () => {
+    try {
+      const providers = getHealthySortedProviders();
+      const response = await queryDNSWithRace(providers, (provider) => {
+        const upstreamUrl = new URL(provider.url);
+        upstreamUrl.searchParams.set('dns', dnsParam);
+        
+        url.searchParams.forEach((value, key) => {
+          if (key !== 'dns') {
+            upstreamUrl.searchParams.set(key, value);
+          }
+        });
 
-    return fetchWithTimeout(upstreamUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/dns-message',
-        'User-Agent': 'DoH-Proxy-Worker/2.0'
-      }
-    }, REQUEST_TIMEOUT);
-  });
+        const timeout = calculateDynamicTimeout(provider);
 
-  const responseBody = await response.arrayBuffer();
-  setCachedResponse(cacheKey, responseBody);
-  
-  return new Response(responseBody, {
-    status: 200,
-    headers: { 'X-Cache': 'MISS' }
-  });
+        return fetchWithTimeout(upstreamUrl.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/dns-message',
+            'User-Agent': getRandomUserAgent()
+          }
+        }, timeout);
+      });
+
+      const responseBody = await response.arrayBuffer();
+      setCachedResponse(cacheKey, responseBody);
+      
+      return new Response(responseBody, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS' }
+      });
+    } finally {
+      pendingRequests.delete(cacheKey);
+    }
+  })();
+
+  pendingRequests.set(cacheKey, requestPromise);
+  return requestPromise;
 }
 
 async function handlePostRequest(request) {
@@ -252,6 +305,12 @@ async function handlePostRequest(request) {
   }
 
   const cacheKey = `POST:${arrayBufferToBase64(body)}`;
+
+  const pending = pendingRequests.get(cacheKey);
+  if (pending) {
+    return pending;
+  }
+
   const cachedResponse = getCachedResponse(cacheKey);
   if (cachedResponse) {
     return new Response(cachedResponse, {
@@ -260,40 +319,61 @@ async function handlePostRequest(request) {
     });
   }
 
-  const providers = shuffleArray([...UPSTREAM_DNS_PROVIDERS]);
-  const response = await queryDNSWithRace(providers, (provider) => {
-    return fetchWithTimeout(provider, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/dns-message',
-        'Accept': 'application/dns-message',
-        'User-Agent': 'DoH-Proxy-Worker/2.0',
-        'Content-Length': body.byteLength.toString()
-      },
-      body: body
-    }, REQUEST_TIMEOUT);
-  });
+  const requestPromise = (async () => {
+    try {
+      const providers = getHealthySortedProviders();
+      const response = await queryDNSWithRace(providers, (provider) => {
+        const timeout = calculateDynamicTimeout(provider);
 
-  const responseBody = await response.arrayBuffer();
-  setCachedResponse(cacheKey, responseBody);
-  
-  return new Response(responseBody, {
-    status: 200,
-    headers: { 'X-Cache': 'MISS' }
-  });
+        return fetchWithTimeout(provider.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/dns-message',
+            'Accept': 'application/dns-message',
+            'User-Agent': getRandomUserAgent(),
+            'Content-Length': body.byteLength.toString()
+          },
+          body: body
+        }, timeout);
+      });
+
+      const responseBody = await response.arrayBuffer();
+      setCachedResponse(cacheKey, responseBody);
+      
+      return new Response(responseBody, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS' }
+      });
+    } finally {
+      pendingRequests.delete(cacheKey);
+    }
+  })();
+
+  pendingRequests.set(cacheKey, requestPromise);
+  return requestPromise;
 }
 
 async function queryDNSWithRace(providers, fetchFunction) {
   const errors = [];
   
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const promises = providers.map(async (provider) => {
+    const availableProviders = providers.filter(p => !isCircuitBreakerOpen(p));
+    
+    if (availableProviders.length === 0) {
+      await sleep(1000);
+      continue;
+    }
+
+    const promises = availableProviders.map(async (provider) => {
+      const startTime = Date.now();
       try {
         const response = await fetchFunction(provider);
         
         if (response.ok) {
           const contentType = response.headers.get('Content-Type');
           if (contentType && contentType.includes('application/dns-message')) {
+            const duration = Date.now() - startTime;
+            recordSuccess(provider, duration);
             return response;
           }
           throw new Error(`Invalid content type: ${contentType}`);
@@ -301,10 +381,13 @@ async function queryDNSWithRace(providers, fetchFunction) {
         
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       } catch (error) {
+        const duration = Date.now() - startTime;
+        recordFailure(provider, duration);
         errors.push({
-          provider: provider,
+          provider: provider.url,
           attempt: attempt,
-          error: error.message
+          error: error.message,
+          duration: duration
         });
         throw error;
       }
@@ -314,7 +397,8 @@ async function queryDNSWithRace(providers, fetchFunction) {
       return await Promise.any(promises);
     } catch (aggregateError) {
       if (attempt < MAX_RETRIES) {
-        await sleep(Math.min(100 * Math.pow(2, attempt), 1000));
+        const backoffTime = Math.min(200 * Math.pow(2, attempt), 2000);
+        await sleep(backoffTime);
         continue;
       }
     }
@@ -409,6 +493,8 @@ function cleanupRateLimitMap() {
       deleted++;
     }
   }
+
+  pendingRequests.clear();
 }
 
 function getCachedResponse(key) {
@@ -424,8 +510,113 @@ function getCachedResponse(key) {
 }
 
 function setCachedResponse(key, data) {
-  const expiresAt = Date.now() + (DNS_CACHE_TTL * 1000);
+  const ttl = calculateDynamicTTL(data);
+  const expiresAt = Date.now() + (ttl * 1000);
   dnsCache.set(key, { data, expiresAt });
+}
+
+function calculateDynamicTTL(responseData) {
+  try {
+    const view = new DataView(responseData);
+    if (view.byteLength < 12) return DNS_CACHE_TTL_DEFAULT;
+    
+    const ancount = view.getUint16(6);
+    
+    if (ancount === 0) {
+      return DNS_CACHE_TTL_MIN;
+    }
+    
+    if (ancount > 5) {
+      return DNS_CACHE_TTL_MAX;
+    }
+    
+    return DNS_CACHE_TTL_DEFAULT;
+  } catch (e) {
+    return DNS_CACHE_TTL_DEFAULT;
+  }
+}
+
+function getHealthySortedProviders() {
+  return UPSTREAM_DNS_PROVIDERS
+    .filter(p => p.healthScore > 20)
+    .sort((a, b) => {
+      const scoreA = a.healthScore / a.priority;
+      const scoreB = b.healthScore / b.priority;
+      return scoreB - scoreA;
+    })
+    .slice(0, 3);
+}
+
+function calculateDynamicTimeout(provider) {
+  const baseTimeout = REQUEST_TIMEOUT_MIN;
+  const healthPenalty = (100 - provider.healthScore) * 50;
+  const timeout = Math.min(baseTimeout + healthPenalty, REQUEST_TIMEOUT_MAX);
+  return timeout;
+}
+
+function recordSuccess(provider, duration) {
+  provider.consecutiveFailures = 0;
+  provider.healthScore = Math.min(100, provider.healthScore + 5);
+  provider.lastCheck = Date.now();
+  
+  if (!providerMetrics.has(provider.url)) {
+    providerMetrics.set(provider.url, { successes: 0, failures: 0, avgDuration: 0 });
+  }
+  
+  const metrics = providerMetrics.get(provider.url);
+  metrics.successes++;
+  metrics.avgDuration = (metrics.avgDuration * (metrics.successes - 1) + duration) / metrics.successes;
+}
+
+function recordFailure(provider, duration) {
+  provider.consecutiveFailures++;
+  provider.healthScore = Math.max(0, provider.healthScore - 10);
+  provider.lastCheck = Date.now();
+  
+  if (!providerMetrics.has(provider.url)) {
+    providerMetrics.set(provider.url, { successes: 0, failures: 0, avgDuration: 0 });
+  }
+  
+  const metrics = providerMetrics.get(provider.url);
+  metrics.failures++;
+}
+
+function isCircuitBreakerOpen(provider) {
+  if (provider.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD) {
+    return false;
+  }
+  
+  const timeSinceLastCheck = Date.now() - provider.lastCheck;
+  if (timeSinceLastCheck > CIRCUIT_BREAKER_TIMEOUT) {
+    provider.consecutiveFailures = Math.floor(provider.consecutiveFailures / 2);
+    return false;
+  }
+  
+  return true;
+}
+
+function performHealthCheckIfNeeded() {
+  const now = Date.now();
+  if (now - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
+    return;
+  }
+  
+  lastHealthCheck = now;
+  
+  UPSTREAM_DNS_PROVIDERS.forEach(provider => {
+    if (provider.healthScore < 50) {
+      provider.healthScore = Math.min(100, provider.healthScore + 10);
+    }
+    
+    if (now - provider.lastCheck > HEALTH_CHECK_INTERVAL * 2) {
+      provider.healthScore = 100;
+      provider.consecutiveFailures = 0;
+    }
+  });
+}
+
+function getRandomUserAgent() {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
 function isValidBase64Url(str) {
@@ -435,15 +626,6 @@ function isValidBase64Url(str) {
   
   const base64UrlRegex = /^[A-Za-z0-9_-]+={0,2}$/;
   return base64UrlRegex.test(str);
-}
-
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 function arrayBufferToBase64(buffer) {
@@ -733,6 +915,8 @@ function getHomePage(requestUrl) {
         <div class="feature">Cache هوشمند برای سرعت بیشتر</div>
         <div class="feature">Timeout مدیریت شده برای پایداری بالا</div>
         <div class="feature">پشتیبانی از GET و POST method</div>
+        <div class="feature">سیستم Health Check و Circuit Breaker هوشمند</div>
+        <div class="feature">مقاومت در برابر DPI و فیلترینگ پیشرفته</div>
 
         <h2>🌐 سرورهای DNS استفاده شده:</h2>
         <div class="dns-list">
