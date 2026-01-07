@@ -299,7 +299,7 @@ function generateAppleProfile(requestUrl) {
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) with ultimate anti-censorship and privacy features, including ODoH support.
 
-Designed by: Anonymous - Ultimate 2026</string>
+Designed by: Anonymous - Ultimate</string>
     <key>PayloadDisplayName</key>
     <string>Ultimate Anonymous DoH Proxy - ${hostname}</string>
     <key>PayloadIdentifier</key>
@@ -829,7 +829,7 @@ function getHomePage(requestUrl) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate DoH Proxy 2026 - نسخه نهایی و قدرتمند</title>
+    <title>Ultimate DoH Proxy - نسخه نهایی و قدرتمند</title>
     <style>
         * {
             margin: 0;
