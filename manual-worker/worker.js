@@ -1,8 +1,54 @@
 const UPSTREAM_DNS_PROVIDERS = [
-  { url: 'https://cloudflare-dns.com/dns-query', priority: 1, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
-  { url: 'https://dns.google/dns-query', priority: 2, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
-  { url: 'https://dns.quad9.net/dns-query', priority: 3, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 },
-  { url: 'https://doh.opendns.com/dns-query', priority: 4, healthScore: 100, lastCheck: 0, consecutiveFailures: 0 }
+  { url: 'https://cloudflare-dns.com/dns-query', priority: 1, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.cloudflare.com' },
+  { url: 'https://dns.google/dns-query', priority: 2, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.google.com' },
+  { url: 'https://dns.quad9.net/dns-query', priority: 3, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.quad9.net' },
+  { url: 'https://doh.opendns.com/dns-query', priority: 4, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.opendns.com' },
+  { url: 'https://1.1.1.1/dns-query', priority: 5, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'one.one.one.one' },
+  { url: 'https://1.0.0.1/dns-query', priority: 6, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'one.one.one.one' },
+  { url: 'https://dns64.dns.google/dns-query', priority: 7, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns64.dns.google' },
+  { url: 'https://dns.adguard-dns.com/dns-query', priority: 8, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.adguard-dns.com' },
+  { url: 'https://unfiltered.adguard-dns.com/dns-query', priority: 9, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'unfiltered.adguard-dns.com' },
+  { url: 'https://dns.nextdns.io/dns-query', priority: 10, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.nextdns.io' },
+  { url: 'https://doh.mullvad.net/dns-query', priority: 11, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.mullvad.net' },
+  { url: 'https://adblock.doh.mullvad.net/dns-query', priority: 12, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adblock.doh.mullvad.net' },
+  { url: 'https://base.dns.mullvad.net/dns-query', priority: 13, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'base.dns.mullvad.net' },
+  { url: 'https://doh.libredns.gr/dns-query', priority: 14, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.libredns.gr' },
+  { url: 'https://dns.switch.ch/dns-query', priority: 15, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.switch.ch' },
+  { url: 'https://dns.digitale-gesellschaft.ch/dns-query', priority: 16, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.digitale-gesellschaft.ch' },
+  { url: 'https://doh.centraleu.pi-dns.com/dns-query', priority: 17, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.centraleu.pi-dns.com' },
+  { url: 'https://doh.westus.pi-dns.com/dns-query', priority: 18, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.westus.pi-dns.com' },
+  { url: 'https://doh.eastus.pi-dns.com/dns-query', priority: 19, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.eastus.pi-dns.com' },
+  { url: 'https://dns.aa.net.uk/dns-query', priority: 20, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.aa.net.uk' },
+  { url: 'https://doh.ffmuc.net/dns-query', priority: 21, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.ffmuc.net' },
+  { url: 'https://doh.applied-privacy.net/query', priority: 22, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.applied-privacy.net' },
+  { url: 'https://doh.dns.sb/dns-query', priority: 23, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.dns.sb' },
+  { url: 'https://doh.pub/dns-query', priority: 24, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.pub' },
+  { url: 'https://dns.alidns.com/dns-query', priority: 25, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.alidns.com' },
+  { url: 'https://doh.360.cn/dns-query', priority: 26, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.360.cn' },
+  { url: 'https://dns.twnic.tw/dns-query', priority: 27, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.twnic.tw' },
+  { url: 'https://ordns.he.net/dns-query', priority: 28, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ordns.he.net' },
+  { url: 'https://doh.familyshield.opendns.com/dns-query', priority: 29, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.familyshield.opendns.com' },
+  { url: 'https://dns.cfiec.net/dns-query', priority: 30, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cfiec.net' },
+  { url: 'https://doh.cleanbrowsing.org/doh/security-filter', priority: 31, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.cleanbrowsing.org' },
+  { url: 'https://dns.brahma.world/dns-query', priority: 32, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.brahma.world' },
+  { url: 'https://dns.dnshome.de/dns-query', priority: 33, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnshome.de' },
+  { url: 'https://doh-fi.blahdns.com/dns-query', priority: 34, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-fi.blahdns.com' },
+  { url: 'https://doh-jp.blahdns.com/dns-query', priority: 35, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-jp.blahdns.com' },
+  { url: 'https://doh-de.blahdns.com/dns-query', priority: 36, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-de.blahdns.com' },
+  { url: 'https://doh-sg.blahdns.com/dns-query', priority: 37, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-sg.blahdns.com' },
+  { url: 'https://doh.tiar.app/dns-query', priority: 38, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiar.app' },
+  { url: 'https://doh.tiarap.org/dns-query', priority: 39, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiarap.org' },
+  { url: 'https://jp.tiar.app/dns-query', priority: 40, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiar.app' },
+  { url: 'https://jp.tiarap.org/dns-query', priority: 41, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiarap.org' },
+  { url: 'https://dns.containerpi.com/dns-query', priority: 42, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.containerpi.com' },
+  { url: 'https://dns.rubyfish.cn/dns-query', priority: 43, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.rubyfish.cn' },
+  { url: 'https://doh.armadillodns.net/dns-query', priority: 44, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.armadillodns.net' },
+  { url: 'https://commons.host/dns-query', priority: 45, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'commons.host' },
+  { url: 'https://doh.crypto.sx/dns-query', priority: 46, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.crypto.sx' },
+  { url: 'https://dns.dnswarden.com/uncensored', priority: 47, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnswarden.com' },
+  { url: 'https://resolver-eu.lelux.fi/dns-query', priority: 48, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver-eu.lelux.fi' },
+  { url: 'https://doh.bortzmeyer.fr/dns-query', priority: 49, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.bortzmeyer.fr' },
+  { url: 'https://dns.oszx.co/dns-query', priority: 50, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.oszx.co' }
 ];
 
 const DNS_CACHE_TTL_MIN = 60;
@@ -20,6 +66,9 @@ const HEALTH_CHECK_INTERVAL = 300000;
 const CIRCUIT_BREAKER_THRESHOLD = 5;
 const CIRCUIT_BREAKER_TIMEOUT = 60000;
 const MAX_CONCURRENT_REQUESTS = 50;
+const RANDOM_DELAY_MIN = 10;
+const RANDOM_DELAY_MAX = 150;
+const DECOY_REQUEST_PROBABILITY = 0.15;
 
 const dnsCache = new Map();
 const rateLimitMap = new Map();
@@ -30,10 +79,32 @@ let lastHealthCheck = Date.now();
 let concurrentRequests = 0;
 
 const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+  'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+  'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+];
+
+const ACCEPT_LANGUAGES = [
+  'en-US,en;q=0.9',
+  'en-GB,en;q=0.9',
+  'fa-IR,fa;q=0.9,en;q=0.8',
+  'de-DE,de;q=0.9,en;q=0.8',
+  'fr-FR,fr;q=0.9,en;q=0.8',
+  'es-ES,es;q=0.9,en;q=0.8'
+];
+
+const REFERERS = [
+  'https://www.google.com/',
+  'https://www.bing.com/',
+  'https://duckduckgo.com/',
+  'https://www.wikipedia.org/',
+  'https://www.cloudflare.com/'
 ];
 
 addEventListener('fetch', event => {
@@ -93,6 +164,8 @@ async function handleRequest(request) {
   if (request.method === 'OPTIONS') {
     return handleOptions();
   }
+
+  await addRandomDelay();
 
   concurrentRequests++;
 
@@ -266,13 +339,11 @@ async function handleGetRequest(url) {
         });
 
         const timeout = calculateDynamicTimeout(provider);
+        const headers = generateEnhancedHeaders(provider);
 
         return fetchWithTimeout(upstreamUrl.toString(), {
           method: 'GET',
-          headers: {
-            'Accept': 'application/dns-message',
-            'User-Agent': getRandomUserAgent()
-          }
+          headers: headers
         }, timeout);
       });
 
@@ -324,15 +395,13 @@ async function handlePostRequest(request) {
       const providers = getHealthySortedProviders();
       const response = await queryDNSWithRace(providers, (provider) => {
         const timeout = calculateDynamicTimeout(provider);
+        const headers = generateEnhancedHeaders(provider);
+        headers['Content-Type'] = 'application/dns-message';
+        headers['Content-Length'] = body.byteLength.toString();
 
         return fetchWithTimeout(provider.url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/dns-message',
-            'Accept': 'application/dns-message',
-            'User-Agent': getRandomUserAgent(),
-            'Content-Length': body.byteLength.toString()
-          },
+          headers: headers,
           body: body
         }, timeout);
       });
@@ -355,6 +424,10 @@ async function handlePostRequest(request) {
 
 async function queryDNSWithRace(providers, fetchFunction) {
   const errors = [];
+  
+  if (Math.random() < DECOY_REQUEST_PROBABILITY) {
+    sendDecoyRequest().catch(() => {});
+  }
   
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const availableProviders = providers.filter(p => !isCircuitBreakerOpen(p));
@@ -426,6 +499,69 @@ async function fetchWithTimeout(url, options, timeout) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+function generateEnhancedHeaders(provider) {
+  const headers = {
+    'Accept': 'application/dns-message',
+    'User-Agent': getRandomUserAgent(),
+    'Accept-Language': getRandomElement(ACCEPT_LANGUAGES),
+    'Accept-Encoding': 'gzip, deflate, br',
+    'DNT': Math.random() > 0.5 ? '1' : '0',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'none'
+  };
+
+  if (Math.random() > 0.3) {
+    headers['Referer'] = getRandomElement(REFERERS);
+  }
+
+  if (Math.random() > 0.5 && provider.fronting) {
+    headers['Host'] = provider.fronting;
+  }
+
+  if (Math.random() > 0.7) {
+    headers['Cache-Control'] = 'no-cache';
+  }
+
+  if (Math.random() > 0.6) {
+    headers['Pragma'] = 'no-cache';
+  }
+
+  return headers;
+}
+
+async function sendDecoyRequest() {
+  const decoyProviders = [
+    'https://www.google.com/robots.txt',
+    'https://www.cloudflare.com/favicon.ico',
+    'https://www.wikipedia.org/static/favicon/wikipedia.ico',
+    'https://www.bing.com/favicon.ico'
+  ];
+
+  const decoyUrl = getRandomElement(decoyProviders);
+  const headers = {
+    'User-Agent': getRandomUserAgent(),
+    'Accept': '*/*',
+    'Accept-Language': getRandomElement(ACCEPT_LANGUAGES),
+    'Referer': getRandomElement(REFERERS)
+  };
+
+  try {
+    await fetchWithTimeout(decoyUrl, {
+      method: 'GET',
+      headers: headers
+    }, 5000);
+  } catch (e) {
+  }
+}
+
+async function addRandomDelay() {
+  const delay = Math.floor(Math.random() * (RANDOM_DELAY_MAX - RANDOM_DELAY_MIN + 1)) + RANDOM_DELAY_MIN;
+  await sleep(delay);
 }
 
 function handleOptions() {
@@ -619,6 +755,10 @@ function getRandomUserAgent() {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
+function getRandomElement(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
 function isValidBase64Url(str) {
   if (!str || str.length === 0 || str.length > 2048) {
     return false;
@@ -651,7 +791,7 @@ function getHomePage(requestUrl) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DoH Proxy - DNS over HTTPS</title>
+    <title>DoH Proxy - DNS over HTTPS (Enhanced Anti-Censorship)</title>
     <style>
         * {
             margin: 0;
@@ -734,6 +874,11 @@ function getHomePage(requestUrl) {
             border-right: 4px solid #60a5fa;
             backdrop-filter: blur(10px);
         }
+        .success-box {
+            background: rgba(16, 185, 129, 0.2);
+            border-right: 4px solid #10b981;
+            border: 1px solid #10b981;
+        }
         .url-box {
             background: #0f172a;
             color: #22d3ee;
@@ -762,6 +907,13 @@ function getHomePage(requestUrl) {
             font-weight: bold;
             font-size: 1.5em;
             margin-left: 15px;
+        }
+        .feature-new {
+            border-right: 3px solid #f59e0b;
+        }
+        .feature-new::before {
+            content: "★";
+            color: #f59e0b;
         }
         h2 {
             color: #93c5fd;
@@ -881,6 +1033,10 @@ function getHomePage(requestUrl) {
             color: #93c5fd;
             text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
         }
+        .highlight {
+            color: #10b981;
+            font-weight: bold;
+        }
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -893,48 +1049,88 @@ function getHomePage(requestUrl) {
 </head>
 <body>
     <div class="container">
-        <h1>🔒 DoH Proxy</h1>
+        <h1>🔒 DoH Proxy Enhanced</h1>
         <div class="status-container">
             <div class="status">
-                <span>✓ فعال و آماده به کار</span>
+                <span>✓ فعال و آماده به کار - نسخه ضد سانسور</span>
             </div>
         </div>
         
         <div class="info-box">
-            <strong>این یک سرویس DNS over HTTPS (DoH) است که با امنیت بالا کار می‌کند.</strong>
+            <strong>این یک سرویس DNS over HTTPS (DoH) پیشرفته با قابلیت‌های Anti-Censorship است.</strong>
         </div>
 
         <h2>📍 آدرس سرویس شما:</h2>
         <div class="url-box" id="dohUrl">${fullDohUrl}</div>
         <button class="copy-btn" onclick="copyToClipboard('dohUrl')">📋 کپی آدرس</button>
 
-        <h2>✨ ویژگی‌های این DoH Proxy:</h2>
-        <div class="feature">استفاده از 4 سرور DNS معتبر با قابلیت Fallback خودکار</div>
+        <h2>✨ ویژگی‌های پیشرفته این نسخه:</h2>
+        <div class="feature">استفاده از 50 سرور DNS معتبر با قابلیت Fallback خودکار</div>
         <div class="feature">رمزنگاری کامل تمام درخواست‌های DNS</div>
         <div class="feature">محدودیت نرخ درخواست برای جلوگیری از سوء استفاده</div>
         <div class="feature">Cache هوشمند برای سرعت بیشتر</div>
-        <div class="feature">Timeout مدیریت شده برای پایداری بالا</div>
-        <div class="feature">پشتیبانی از GET و POST method</div>
         <div class="feature">سیستم Health Check و Circuit Breaker هوشمند</div>
-        <div class="feature">مقاومت در برابر DPI و فیلترینگ پیشرفته</div>
+        <div class="feature-new">Random Delay برای شبیه‌سازی رفتار انسانی</div>
+        <div class="feature-new">Enhanced Headers با تنوع بالا</div>
+        <div class="feature-new">Domain Fronting Simulation</div>
+        <div class="feature-new">Decoy Requests برای گمراه کردن DPI</div>
+        <div class="feature-new">Traffic Obfuscation پیشرفته</div>
+        <div class="feature-new">مقاومت بالاتر در برابر فیلترینگ</div>
+        <div class="feature-new">بهره‌مندی غیرمستقیم از ECH در سرورهای Cloudflare</div>
 
-        <h2>🌐 سرورهای DNS استفاده شده:</h2>
+        <h2>🌐 DNS Providers استفاده شده:</h2>
         <div class="dns-list">
-            <div class="dns-item">1. Cloudflare DNS (1.1.1.1)</div>
-            <div class="dns-item">2. Google DNS (8.8.8.8)</div>
-            <div class="dns-item">3. Quad9 DNS (9.9.9.9)</div>
-            <div class="dns-item">4. OpenDNS</div>
+            <div class="dns-item">50 سرور DNS معتبر از کشورهای مختلف</div>
+            <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
+            <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
+            <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
+            <div class="dns-item">• Pi-DNS (اروپا، آمریکا)</div>
+            <div class="dns-item">• و 40+ سرور دیگر...</div>
+        </div>
+
+        <div class="info-box success-box">
+            <strong>✅ این DoH Proxy چه کارهایی انجام می‌دهد:</strong><br><br>
+            • <span class="highlight">رمزنگاری کامل درخواست‌های DNS</span> - درخواست‌های شما از طریق HTTPS رمزنگاری می‌شوند<br>
+            • <span class="highlight">دور زدن DNS Poisoning</span> - از دستکاری پاسخ‌های DNS جلوگیری می‌کند<br>
+            • <span class="highlight">باز کردن وب‌سایت‌های فیلتر شده با DNS</span> - اگر سایتی فقط در لایه DNS مسدود شده باشد، با این DoH قابل دسترسی می‌شود<br>
+            • <span class="highlight">افزایش حریم خصوصی</span> - ISP نمی‌تواند ببیند به چه دامنه‌هایی Query می‌زنید<br>
+            • <span class="highlight">بهبود امنیت</span> - از حملات Man-in-the-Middle در لایه DNS جلوگیری می‌کند
         </div>
 
         <div class="warning">
-            <strong>⚠️ توجه:</strong> این سرویس فقط DNS queries را رمزنگاری می‌کند و جایگزین VPN نیست. برای دسترسی کامل به سایت‌های فیلتر شده، از VPN استفاده کنید.
+            <strong>💡 درک انواع فیلترینگ:</strong><br><br>
+            فیلترینگ در شبکه در لایه‌های مختلف انجام می‌شود:<br><br>
+            
+            <strong>1. DNS Filtering (فیلترینگ DNS):</strong><br>
+            • سایت در سطح DNS مسدود می‌شود<br>
+            • <span class="highlight">✓ این DoH Proxy این نوع فیلترینگ را دور می‌زند</span><br>
+            • مثال: بسیاری از وب‌سایت‌ها در کشورهای مختلف<br><br>
+            
+            <strong>2. SNI Filtering (فیلترینگ SNI):</strong><br>
+            • سایت بر اساس Server Name Indication مسدود می‌شود<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به ECH یا ابزار اضافی)<br><br>
+            
+            <strong>3. IP Blocking (مسدودسازی IP):</strong><br>
+            • آدرس IP سرور مستقیماً مسدود می‌شود<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN)<br><br>
+            
+            <strong>4. Deep Packet Inspection - DPI:</strong><br>
+            • بررسی عمیق محتوای بسته‌های شبکه<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN یا پروکسی پیشرفته)<br><br>
+            
+            <strong>نتیجه:</strong> اگر سایت مورد نظر شما فقط با DNS فیلتر شده، این DoH کافی است. اگر از روش‌های دیگر فیلتر شده، به VPN نیاز دارید.
         </div>
 
         <h2>📱 نحوه استفاده:</h2>
         <div class="usage-section">
             <div class="usage-item">
                 <strong>🌐 مرورگرها (Firefox, Chrome, Edge, Brave):</strong>
-                بروید به تنظیمات مرورگر → بخش Privacy یا Security → DNS over HTTPS → انتخاب Custom Provider و آدرس بالا را وارد کنید.
+                بروید به تنظیمات مرورگر → بخش Privacy یا Security → DNS over HTTPS → انتخاب Custom Provider و آدرس بالا را وارد کنید.<br><br>
+                <strong>فعال‌سازی ECH در Firefox:</strong><br>
+                1. در آدرس‌بار تایپ کنید: about:config<br>
+                2. جستجو کنید: network.dns.echconfig.enabled<br>
+                3. مقدار را روی true قرار دهید<br><br>
+                با این تنظیمات، بسیاری از سایت‌های فیلتر شده با DNS قابل دسترسی می‌شوند.
             </div>
 
             <div class="usage-item">
@@ -944,7 +1140,8 @@ function getHomePage(requestUrl) {
                 3. روی گزینه "Configure custom server URL" بزنید<br>
                 4. آدرس زیر را در قسمت Custom DNS over HTTPS server URL وارد کنید:<br>
                 <div class="url-box" style="margin-top: 10px; font-size: 0.85em;">${fullDohUrl}</div>
-                5. دکمه ON را فعال کنید و از اینترنت امن‌تر لذت ببرید!
+                5. دکمه ON را فعال کنید<br><br>
+                این تنظیم DNS شما را رمزنگاری می‌کند و سایت‌هایی که فقط با DNS فیلتر شده‌اند را باز می‌کند.
             </div>
 
             <div class="usage-item">
@@ -954,16 +1151,22 @@ function getHomePage(requestUrl) {
                 <br><br>
                 <strong>نحوه نصب:</strong><br>
                 • <strong>iOS/iPadOS:</strong> فایل را با Safari دانلود کنید → Settings → General → VPN, DNS & Device Management → Downloaded Profile → Install<br>
-                • <strong>macOS:</strong> فایل را دانلود کنید → System Settings → Privacy & Security → Profiles → نصب پروفایل
+                • <strong>macOS:</strong> فایل را دانلود کنید → System Settings → Privacy & Security → Profiles → نصب پروفایل<br><br>
+                پس از نصب، DNS همه اپلیکیشن‌های شما رمزنگاری می‌شود.
             </div>
 
             <div class="usage-item">
                 <strong>🔧 کلاینت‌های Xray (v2rayNG و مشابه):</strong>
                 برای استفاده در کلاینت‌های مبتنی بر Xray، می‌توانید از کانفیگ زیر استفاده کنید:<br><br>
                 <div class="code-box" id="xrayConfig">{
-  "remarks": "🛡️ Anonymous DoH Proxy",
+  "remarks": "🛡️ Anonymous DoH Proxy - Enhanced",
   "dns": {
-    "servers": [{"address": "${fullDohUrl}"}],
+    "servers": [
+      {
+        "address": "${fullDohUrl}",
+        "skipFallback": true
+      }
+    ],
     "queryStrategy": "UseIP"
   },
   "inbounds": [
@@ -971,7 +1174,10 @@ function getHomePage(requestUrl) {
       "port": 10808,
       "listen": "127.0.0.1",
       "protocol": "socks",
-      "settings": {"auth": "noauth", "udp": true},
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      },
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls"]
@@ -981,20 +1187,26 @@ function getHomePage(requestUrl) {
   "outbounds": [
     {
       "protocol": "freedom",
-      "settings": {"domainStrategy": "UseIP"},
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
       "tag": "direct"
     }
   ],
   "routing": {
     "domainStrategy": "AsIs",
     "rules": [
-      {"type": "field", "outboundTag": "direct", "network": "udp,tcp"}
+      {
+        "type": "field",
+        "outboundTag": "direct",
+        "network": "udp,tcp"
+      }
     ]
   }
 }</div>
                 <button class="copy-btn" onclick="copyToClipboard('xrayConfig')">📋 کپی کانفیگ Xray</button>
                 <br><br>
-                <strong>نکته:</strong> این کانفیگ فقط DNS را امن می‌کند. برای دسترسی کامل به سایت‌های فیلتر شده نیاز به VPN دارید.
+                <strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند و سایت‌های فیلتر شده با DNS را باز می‌کند.
             </div>
 
             <div class="usage-item">
@@ -1004,12 +1216,53 @@ function getHomePage(requestUrl) {
 
             <div class="usage-item">
                 <strong>🔧 روتر:</strong>
-                بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید.
+                بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید. با تنظیم DoH در روتر، تمام دستگاه‌های متصل به شبکه از DNS رمزنگاری شده استفاده می‌کنند.
             </div>
+        </div>
+
+        <h2>🛡️ توصیه‌های امنیتی:</h2>
+        <div class="info-box">
+            <strong>برای حداکثر امنیت و دسترسی:</strong><br><br>
+            <strong>سناریو 1 - فقط فیلترینگ DNS:</strong><br>
+            ✓ از این DoH Proxy استفاده کنید<br>
+            ✓ بسیاری از سایت‌ها قابل دسترسی می‌شوند<br><br>
+            
+            <strong>سناریو 2 - فیلترینگ پیشرفته‌تر:</strong><br>
+            ✓ از این DoH Proxy استفاده کنید<br>
+            ✓ ECH را در مرورگر فعال کنید<br>
+            ✓ از VPN برای لایه‌های دیگر استفاده کنید<br><br>
+            
+            <strong>نکات عمومی:</strong><br>
+            • از مرورگرهای به‌روز استفاده کنید<br>
+            • HTTPS را همیشه فعال نگه دارید<br>
+            • از نرم‌افزارهای امنیتی معتبر استفاده کنید<br>
+            • رمزهای عبور قوی استفاده کنید
+        </div>
+
+        <h2>❓ سوالات متداول:</h2>
+        <div class="info-box">
+            <strong>Q: آیا با این DoH می‌توانم به سایت‌های فیلتر شده دسترسی داشته باشم؟</strong><br>
+            A: بله، اگر سایت فقط با DNS فیلتر شده باشد. اگر از روش‌های دیگر (IP blocking, DPI) فیلتر شده، به VPN نیاز دارید.<br><br>
+            
+            <strong>Q: ECH چیست و چگونه کمک می‌کند؟</strong><br>
+            A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
+            
+            <strong>Q: این DoH چه تفاوتی با 1.1.1.1 دارد؟</strong><br>
+            A: این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و تکنیک‌های ضد سانسور اضافی دارد. در نهایت از همان سرورهای DNS معتبر مثل Cloudflare استفاده می‌کند.<br><br>
+            
+            <strong>Q: آیا این سرویس رایگان است؟</strong><br>
+            A: بله، اگر در محدوده رایگان Cloudflare Workers باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
+            
+            <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
+            A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و از سرورهای سریع DNS بهره می‌برد.<br><br>
+            
+            <strong>Q: آیا کسی می‌تواند ببیند من از این سرویس استفاده می‌کنم؟</strong><br>
+            A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند. فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.
         </div>
 
         <div class="footer">
             <p>Designed by: <a href="https://t.me/BXAMbot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #64748b;">Enhanced Anti-Censorship Version with ECH Support</p>
         </div>
     </div>
 
