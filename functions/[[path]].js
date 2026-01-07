@@ -279,9 +279,9 @@ function generateAppleProfile(requestUrl) {
                 <string>${dohUrl}</string>
             </dict>
             <key>PayloadDescription</key>
-            <string>Configures device to use Ultimate Anonymous DoH Proxy with ODoH support</string>
+            <string>Configures device to use Anonymous DoH Proxy</string>
             <key>PayloadDisplayName</key>
-            <string>Ultimate Anonymous DoH Proxy</string>
+            <string>Anonymous DoH Proxy</string>
             <key>PayloadIdentifier</key>
             <string>com.cloudflare.${uuid2}.dnsSettings.managed</string>
             <key>PayloadType</key>
@@ -295,11 +295,11 @@ function generateAppleProfile(requestUrl) {
         </dict>
     </array>
     <key>PayloadDescription</key>
-    <string>This profile enables encrypted DNS (DNS over HTTPS) with ultimate anti-censorship and privacy features, including ODoH support.
+    <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
 
-Designed by: Anonymous - Ultimate</string>
+Designed by: Anonymous</string>
     <key>PayloadDisplayName</key>
-    <string>Ultimate Anonymous DoH Proxy - ${hostname}</string>
+    <string>Anonymous DoH Proxy - ${hostname}</string>
     <key>PayloadIdentifier</key>
     <string>com.cloudflare.${uuid1}</string>
     <key>PayloadRemovalDisallowed</key>
@@ -827,7 +827,7 @@ function getHomePage(requestUrl) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate DoH Proxy - نسخه نهایی و قدرتمند</title>
+    <title>DoH Proxy - DNS over HTTPS (Enhanced Anti-Censorship)</title>
     <style>
         * {
             margin: 0;
@@ -1085,86 +1085,117 @@ function getHomePage(requestUrl) {
 </head>
 <body>
     <div class="container">
-        <h1>🔒 Ultimate DoH Proxy</h1>
+        <h1>🔒 DoH Proxy Enhanced</h1>
         <div class="status-container">
             <div class="status">
-                <span>✓ نسخه نهایی با 52 سرور DNS و پشتیبانی ODoH</span>
+                <span>✓ فعال و آماده به کار - نسخه ضد سانسور</span>
             </div>
         </div>
         
         <div class="info-box">
-            <strong>قدرتمندترین سرویس DNS over HTTPS با حداکثر امنیت، حریم خصوصی و مقاومت در برابر سانسور</strong>
+            <strong>این یک سرویس DNS over HTTPS (DoH) پیشرفته با قابلیت‌های Anti-Censorship است.</strong>
         </div>
 
         <h2>📍 آدرس سرویس شما:</h2>
         <div class="url-box" id="dohUrl">${fullDohUrl}</div>
         <button class="copy-btn" onclick="copyToClipboard('dohUrl')">📋 کپی آدرس</button>
 
-        <h2>✨ ویژگی‌های نسخه Ultimate:</h2>
-        <div class="feature-new">52 سرور DNS با اولویت Oblivious DoH Cloudflare</div>
-        <div class="feature">رمزنگاری کامل + لایه حریم خصوصی اضافی ODoH</div>
-        <div class="feature">Rate Limit: 150 درخواست در دقیقه</div>
-        <div class="feature">Cache بزرگ 2000 رکورد</div>
-        <div class="feature">80 درخواست همزمان</div>
-        <div class="feature-new">Random Delay: 20-200ms</div>
-        <div class="feature-new">Decoy Requests: 25% احتمال</div>
-        <div class="feature-new">هدرهای مدرن Sec-CH-UA</div>
-        <div class="feature-new">User-Agents به‌روز Chrome 130/131</div>
-        <div class="feature-new">Health Check بهینه‌شده</div>
-        <div class="feature-new">Circuit Breaker پیشرفته</div>
+        <h2>✨ ویژگی‌های پیشرفته این نسخه:</h2>
+        <div class="feature">استفاده از 50 سرور DNS معتبر با قابلیت Fallback خودکار</div>
+        <div class="feature">رمزنگاری کامل تمام درخواست‌های DNS</div>
+        <div class="feature">محدودیت نرخ درخواست برای جلوگیری از سوء استفاده</div>
+        <div class="feature">Cache هوشمند برای سرعت بیشتر</div>
+        <div class="feature">سیستم Health Check و Circuit Breaker هوشمند</div>
+        <div class="feature-new">Random Delay برای شبیه‌سازی رفتار انسانی</div>
+        <div class="feature-new">Enhanced Headers با تنوع بالا</div>
+        <div class="feature-new">Domain Fronting Simulation</div>
+        <div class="feature-new">Decoy Requests برای گمراه کردن DPI</div>
+        <div class="feature-new">Traffic Obfuscation پیشرفته</div>
+        <div class="feature-new">مقاومت بالاتر در برابر فیلترینگ</div>
+        <div class="feature-new">بهره‌مندی غیرمستقیم از ECH در سرورهای Cloudflare</div>
 
-        <h2>🌐 DNS Providers:</h2>
+        <h2>🌐 DNS Providers استفاده شده:</h2>
         <div class="dns-list">
-            <div class="dns-item">🔵 ODoH Cloudflare (حریم خصوصی حداکثر)</div>
+            <div class="dns-item">50 سرور DNS معتبر از کشورهای مختلف</div>
             <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
-            <div class="dns-item">• AdGuard, NextDNS, Mullvad, Wikimedia</div>
-            <div class="dns-item">• BlahDNS (4 منطقه), Pi-DNS (3 منطقه)</div>
+            <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
+            <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
+            <div class="dns-item">• Pi-DNS (اروپا، آمریکا)</div>
             <div class="dns-item">• و 40+ سرور دیگر...</div>
         </div>
 
         <div class="info-box success-box">
-            <strong>✅ قابلیت‌های این DoH:</strong><br><br>
-            • <span class="highlight">رمزنگاری کامل DNS</span> + حریم خصوصی ODoH<br>
-            • <span class="highlight">دور زدن DNS Poisoning</span><br>
-            • <span class="highlight">باز کردن سایت‌های فیلتر شده با DNS</span><br>
-            • <span class="highlight">مخفی کردن هویت از سرور DNS</span> (ODoH)<br>
-            • <span class="highlight">مقاومت بالا در برابر DPI</span>
+            <strong>✅ این DoH Proxy چه کارهایی انجام می‌دهد:</strong><br><br>
+            • <span class="highlight">رمزنگاری کامل درخواست‌های DNS</span> - درخواست‌های شما از طریق HTTPS رمزنگاری می‌شوند<br>
+            • <span class="highlight">دور زدن DNS Poisoning</span> - از دستکاری پاسخ‌های DNS جلوگیری می‌کند<br>
+            • <span class="highlight">باز کردن وب‌سایت‌های فیلتر شده با DNS</span> - اگر سایتی فقط در لایه DNS مسدود شده باشد، با این DoH قابل دسترسی می‌شود<br>
+            • <span class="highlight">افزایش حریم خصوصی</span> - ISP نمی‌تواند ببیند به چه دامنه‌هایی Query می‌زنید<br>
+            • <span class="highlight">بهبود امنیت</span> - از حملات Man-in-the-Middle در لایه DNS جلوگیری می‌کند
         </div>
 
         <div class="warning">
-            <strong>💡 ODoH چیست؟</strong><br><br>
-            Oblivious DoH لایه اضافی حریم خصوصی است که:<br>
-            • حتی سرور DNS نمی‌تواند IP شما را ببیند<br>
-            • درخواست‌ها از طریق Proxy ارسال می‌شوند<br>
-            • حریم خصوصی بیشتر از DoH معمولی<br><br>
-            <strong>توجه:</strong> این DoH فقط فیلترینگ DNS را دور می‌زند. برای فیلترینگ SNI, IP و DPI به VPN نیاز دارید.
+            <strong>💡 درک انواع فیلترینگ:</strong><br><br>
+            فیلترینگ در شبکه در لایه‌های مختلف انجام می‌شود:<br><br>
+            
+            <strong>1. DNS Filtering (فیلترینگ DNS):</strong><br>
+            • سایت در سطح DNS مسدود می‌شود<br>
+            • <span class="highlight">✓ این DoH Proxy این نوع فیلترینگ را دور می‌زند</span><br>
+            • مثال: بسیاری از وب‌سایت‌ها در کشورهای مختلف<br><br>
+            
+            <strong>2. SNI Filtering (فیلترینگ SNI):</strong><br>
+            • سایت بر اساس Server Name Indication مسدود می‌شود<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به ECH یا ابزار اضافی)<br><br>
+            
+            <strong>3. IP Blocking (مسدودسازی IP):</strong><br>
+            • آدرس IP سرور مستقیماً مسدود می‌شود<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN)<br><br>
+            
+            <strong>4. Deep Packet Inspection - DPI:</strong><br>
+            • بررسی عمیق محتوای بسته‌های شبکه<br>
+            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN یا پروکسی پیشرفته)<br><br>
+            
+            <strong>نتیجه:</strong> اگر سایت مورد نظر شما فقط با DNS فیلتر شده، این DoH کافی است. اگر از روش‌های دیگر فیلتر شده، به VPN نیاز دارید.
         </div>
 
         <h2>📱 نحوه استفاده:</h2>
         <div class="usage-section">
             <div class="usage-item">
-                <strong>🌐 مرورگرها:</strong>
-                تنظیمات → Privacy/Security → DNS over HTTPS → Custom Provider → آدرس بالا<br><br>
+                <strong>🌐 مرورگرها (Firefox, Chrome, Edge, Brave):</strong>
+                بروید به تنظیمات مرورگر → بخش Privacy یا Security → DNS over HTTPS → انتخاب Custom Provider و آدرس بالا را وارد کنید.<br><br>
                 <strong>فعال‌سازی ECH در Firefox:</strong><br>
-                about:config → network.dns.echconfig.enabled → true
+                1. در آدرس‌بار تایپ کنید: about:config<br>
+                2. جستجو کنید: network.dns.echconfig.enabled<br>
+                3. مقدار را روی true قرار دهید<br><br>
+                با این تنظیمات، بسیاری از سایت‌های فیلتر شده با DNS قابل دسترسی می‌شوند.
             </div>
 
             <div class="usage-item">
-                <strong>📱 Intra (اندروید):</strong>
-                Configure custom server URL → آدرس بالا را وارد کنید
+                <strong>📱 اپلیکیشن Intra (اندروید):</strong>
+                1. اپلیکیشن Intra را از Google Play نصب کنید<br>
+                2. اپلیکیشن را باز کنید<br>
+                3. روی گزینه "Configure custom server URL" بزنید<br>
+                4. آدرس زیر را در قسمت Custom DNS over HTTPS server URL وارد کنید:<br>
+                <div class="url-box" style="margin-top: 10px; font-size: 0.85em;">${fullDohUrl}</div>
+                5. دکمه ON را فعال کنید<br><br>
+                این تنظیم DNS شما را رمزنگاری می‌کند و سایت‌هایی که فقط با DNS فیلتر شده‌اند را باز می‌کند.
             </div>
 
             <div class="usage-item">
                 <strong>🍎 iOS, iPadOS و macOS:</strong>
-                <a href="${appleProfileUrl}" class="download-btn">🍎 دانلود پروفایل</a>
+                برای استفاده در دستگاه‌های اپل، کافی است پروفایل شخصی خود را دانلود و نصب کنید:<br><br>
+                <a href="${appleProfileUrl}" class="download-btn">🍎 دانلود پروفایل iOS/macOS</a>
                 <br><br>
-                <strong>نصب:</strong> Settings → General → VPN & Device Management → Install
+                <strong>نحوه نصب:</strong><br>
+                • <strong>iOS/iPadOS:</strong> فایل را با Safari دانلود کنید → Settings → General → VPN, DNS & Device Management → Downloaded Profile → Install<br>
+                • <strong>macOS:</strong> فایل را دانلود کنید → System Settings → Privacy & Security → Profiles → نصب پروفایل<br><br>
+                پس از نصب، DNS همه اپلیکیشن‌های شما رمزنگاری می‌شود.
             </div>
 
             <div class="usage-item">
-                <strong>🔧 Xray/v2rayNG:</strong>
+                <strong>🔧 کلاینت‌های Xray (v2rayNG و مشابه):</strong>
+                برای استفاده در کلاینت‌های مبتنی بر Xray، می‌توانید از کانفیگ زیر استفاده کنید:<br><br>
                 <div class="code-box" id="xrayConfig">{
-  "remarks": "🛡️ Ultimate DoH Proxy",
+  "remarks": "🛡️ Anonymous DoH Proxy - Enhanced",
   "dns": {
     "servers": [
       {
@@ -1209,49 +1240,65 @@ function getHomePage(requestUrl) {
     ]
   }
 }</div>
-                <button class="copy-btn" onclick="copyToClipboard('xrayConfig')">📋 کپی کانفیگ</button>
+                <button class="copy-btn" onclick="copyToClipboard('xrayConfig')">📋 کپی کانفیگ Xray</button>
+                <br><br>
+                <strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند و سایت‌های فیلتر شده با DNS را باز می‌کند.
             </div>
 
             <div class="usage-item">
                 <strong>💻 ویندوز 11:</strong>
-                Settings → Network & Internet → Properties → DNS → Edit → Encrypted only (DoH) → آدرس بالا
+                Settings → Network & Internet → Properties → DNS server assignment → Edit → Preferred DNS encryption: Encrypted only (DNS over HTTPS) و آدرس بالا را وارد کنید.
             </div>
+
+            <div class="usage-item">
+                <strong>🔧 روتر:</strong>
+                بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید. با تنظیم DoH در روتر، تمام دستگاه‌های متصل به شبکه از DNS رمزنگاری شده استفاده می‌کنند.
+            </div>
+        </div>
+
+        <h2>🛡️ توصیه‌های امنیتی:</h2>
+        <div class="info-box">
+            <strong>برای حداکثر امنیت و دسترسی:</strong><br><br>
+            <strong>سناریو 1 - فقط فیلترینگ DNS:</strong><br>
+            ✓ از این DoH Proxy استفاده کنید<br>
+            ✓ بسیاری از سایت‌ها قابل دسترسی می‌شوند<br><br>
+            
+            <strong>سناریو 2 - فیلترینگ پیشرفته‌تر:</strong><br>
+            ✓ از این DoH Proxy استفاده کنید<br>
+            ✓ ECH را در مرورگر فعال کنید<br>
+            ✓ از VPN برای لایه‌های دیگر استفاده کنید<br><br>
+            
+            <strong>نکات عمومی:</strong><br>
+            • از مرورگرهای به‌روز استفاده کنید<br>
+            • HTTPS را همیشه فعال نگه دارید<br>
+            • از نرم‌افزارهای امنیتی معتبر استفاده کنید<br>
+            • رمزهای عبور قوی استفاده کنید
         </div>
 
         <h2>❓ سوالات متداول:</h2>
         <div class="info-box">
-            <strong>Q: تفاوت این با نسخه قبلی چیست؟</strong><br>
-            A: 52 سرور (به جای 50)، ODoH Cloudflare در اولویت اول، User-Agents جدیدتر، هدرهای Sec-CH-UA، Rate Limit بیشتر (150)، Cache بزرگتر (2000)، Random Delay بیشتر، Decoy Requests بیشتر (25%)، بهینه‌سازی‌های متعدد.<br><br>
+            <strong>Q: آیا با این DoH می‌توانم به سایت‌های فیلتر شده دسترسی داشته باشم؟</strong><br>
+            A: بله، اگر سایت فقط با DNS فیلتر شده باشد. اگر از روش‌های دیگر (IP blocking, DPI) فیلتر شده، به VPN نیاز دارید.<br><br>
             
-            <strong>Q: ODoH چقدر حریم خصوصی اضافه می‌کند؟</strong><br>
-            A: با ODoH حتی سرور DNS نمی‌تواند IP واقعی شما را ببیند. درخواست از طریق Proxy ارسال می‌شود.<br><br>
+            <strong>Q: ECH چیست و چگونه کمک می‌کند؟</strong><br>
+            A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
             
-            <strong>Q: آیا سرعت کاهش می‌یابد؟</strong><br>
-            A: خیر، Cache بزرگ و هوشمند باعث افزایش سرعت می‌شود.<br><br>
+            <strong>Q: این DoH چه تفاوتی با 1.1.1.1 دارد؟</strong><br>
+            A: این DoH Proxy شخصی شماست که روی Cloudflare Pages اجرا می‌شود و تکنیک‌های ضد سانسور اضافی دارد. در نهایت از همان سرورهای DNS معتبر مثل Cloudflare استفاده می‌کند.<br><br>
             
-            <strong>Q: آیا رایگان است؟</strong><br>
-            A: بله، Cloudflare Pages کاملاً رایگان و بدون محدودیت ترافیک است.<br><br>
+            <strong>Q: آیا این سرویس رایگان است؟</strong><br>
+            A: بله، Cloudflare Pages کاملاً رایگان است و محدودیت ترافیک ندارد.<br><br>
             
-            <strong>Q: چه سایت‌هایی باز می‌شوند؟</strong><br>
-            A: سایت‌هایی که فقط با DNS فیلتر شده‌اند. برای سایر موارد به VPN نیاز دارید.
-        </div>
-
-        <h2>🛡️ امنیت و حریم خصوصی:</h2>
-        <div class="info-box">
-            <strong>لایه‌های حفاظتی:</strong><br><br>
-            1️⃣ <span class="highlight">HTTPS Encryption</span> - رمزنگاری کامل ترافیک<br>
-            2️⃣ <span class="highlight">ODoH Privacy Layer</span> - مخفی کردن IP از DNS<br>
-            3️⃣ <span class="highlight">52 DNS Servers</span> - تنوع و پایداری<br>
-            4️⃣ <span class="highlight">Traffic Obfuscation</span> - مبهم‌سازی الگوی ترافیک<br>
-            5️⃣ <span class="highlight">Modern Headers</span> - شبیه‌سازی مرورگر واقعی<br>
-            6️⃣ <span class="highlight">Decoy Requests</span> - گمراه کردن DPI<br>
-            7️⃣ <span class="highlight">Random Delays</span> - رفتار انسانی طبیعی
+            <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
+            A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و از سرورهای سریع DNS بهره می‌برد.<br><br>
+            
+            <strong>Q: آیا کسی می‌تواند ببیند من از این سرویس استفاده می‌کنم؟</strong><br>
+            A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند. فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.
         </div>
 
         <div class="footer">
-            <p><strong>Ultimate DoH Proxy</strong></p>
-            <p>Maximum Privacy • Maximum Performance • Maximum Security</p>
-            <p style="margin-top: 10px;">Designed by: Anonymous</p>
+            <p>Designed by: <a href="https://t.me/BXAMbot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #64748b;">Enhanced Anti-Censorship Version with ECH Support</p>
         </div>
     </div>
 
