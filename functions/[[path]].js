@@ -153,10 +153,12 @@ function calculateProviderScore(provider) {
   }
   
   const freshnessPenalty = Math.min(20, timeSinceLastCheck / 10000);
+  
   const totalScore = (healthScore * healthWeight) + 
                     (speedScore * speedWeight) + 
                     (reliabilityScore * reliabilityWeight) - 
                     freshnessPenalty;
+  
   return Math.max(0, Math.min(100, totalScore));
 }
 
@@ -177,6 +179,7 @@ function selectBestProviders(count) {
     provider,
     score: calculateProviderScore(provider)
   }));
+  
   scoredProviders.sort((a, b) => b.score - a.score);
   
   const diversityBonus = scoredProviders.slice(0, Math.min(20, scoredProviders.length));
@@ -191,10 +194,12 @@ function selectBestProviders(count) {
 function updateProviderMetrics(provider, success, responseTime) {
   provider.totalRequests++;
   provider.lastCheck = Date.now();
+  
   if (success) {
     provider.successCount++;
     provider.consecutiveFailures = 0;
     provider.healthScore = Math.min(100, provider.healthScore + 5);
+    
     if (provider.avgResponseTime === 0) {
       provider.avgResponseTime = responseTime;
     } else {
@@ -252,7 +257,7 @@ async function performHealthCheck() {
   const providersToCheck = UPSTREAM_DNS_PROVIDERS
     .filter(p => now - p.lastCheck > HEALTH_CHECK_INTERVAL)
     .slice(0, 10);
-    
+  
   const healthCheckPromises = providersToCheck.map(async (provider) => {
     const startTime = Date.now();
     try {
@@ -289,6 +294,7 @@ async function performHealthCheck() {
 
 async function raceMultipleProviders(dnsQuery, headers) {
   const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT);
+  
   const racePromises = selectedProviders.map(async (provider) => {
     const startTime = Date.now();
     const controller = new AbortController();
@@ -329,17 +335,20 @@ async function raceMultipleProviders(dnsQuery, headers) {
       }
       
       const responseData = await response.arrayBuffer();
+      
       if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
         updateProviderMetrics(provider, false, responseTime);
         throw new Error('Response too large');
       }
       
       updateProviderMetrics(provider, true, responseTime);
+      
       return {
         data: responseData,
         provider: provider.url,
         responseTime: responseTime
       };
+      
     } catch (error) {
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
@@ -356,7 +365,7 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
     .filter(p => !excludeProviders.includes(p.url) && p.healthScore > 20)
     .sort((a, b) => calculateProviderScore(b) - calculateProviderScore(a))
     .slice(0, 5);
-    
+  
   for (const provider of availableProviders) {
     const startTime = Date.now();
     const controller = new AbortController();
@@ -376,6 +385,7 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
       
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
+      
       if (response.ok) {
         const responseData = await response.arrayBuffer();
         updateProviderMetrics(provider, true, responseTime);
@@ -461,6 +471,7 @@ function extractTTL(dnsResponse) {
 
 function isRateLimited(clientIP) {
   const now = Date.now();
+  
   if (now - lastCleanupTime > RATE_LIMIT_CLEANUP_INTERVAL) {
     const cutoff = now - RATE_LIMIT_WINDOW;
     for (const [ip, data] of rateLimitMap.entries()) {
@@ -472,6 +483,7 @@ function isRateLimited(clientIP) {
   }
   
   let clientData = rateLimitMap.get(clientIP);
+  
   if (!clientData || now - clientData.windowStart > RATE_LIMIT_WINDOW) {
     clientData = {
       count: 0,
@@ -496,6 +508,7 @@ async function sendDecoyRequests() {
     ...Array.from(randomDomain).map(c => c.charCodeAt(0)),
     0x00, 0x00, 0x01, 0x00, 0x01
   ]);
+  
   const randomProvider = UPSTREAM_DNS_PROVIDERS[Math.floor(Math.random() * UPSTREAM_DNS_PROVIDERS.length)];
   
   try {
@@ -513,6 +526,7 @@ async function sendDecoyRequests() {
 async function handleDNSQuery(request) {
   const url = new URL(request.url);
   const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+  
   if (isRateLimited(clientIP)) {
     return new Response('Rate limit exceeded', { 
       status: 429,
@@ -558,6 +572,7 @@ async function handleDNSQuery(request) {
     performHealthCheck().catch(() => {});
     performAdaptiveLearning().catch(() => {});
     sendDecoyRequests().catch(() => {});
+    
     const cacheKey = getCacheKey(dnsQuery);
     const cachedResponse = getCachedResponse(cacheKey);
     
@@ -582,6 +597,7 @@ async function handleDNSQuery(request) {
     
     const ttl = extractTTL(result.data);
     setCachedResponse(cacheKey, result.data, ttl);
+    
     return new Response(result.data, {
       status: 200,
       headers: {
@@ -592,6 +608,7 @@ async function handleDNSQuery(request) {
         'X-Response-Time': `${result.responseTime}ms`
       }
     });
+    
   } catch (error) {
     return new Response('DNS query failed', { 
       status: 502,
@@ -612,6 +629,7 @@ function generateAppleProfile(requestUrl) {
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
   const uuid3 = crypto.randomUUID();
+
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -644,7 +662,7 @@ function generateAppleProfile(requestUrl) {
     </array>
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
-    
+
 Designed by: Anonymous</string>
     <key>PayloadDisplayName</key>
     <string>Anonymous DoH Proxy - ${hostname}</string>
@@ -660,6 +678,7 @@ Designed by: Anonymous</string>
     <integer>1</integer>
 </dict>
 </plist>`;
+
   return new Response(mobileconfig, {
     status: 200,
     headers: {
@@ -668,6 +687,21 @@ Designed by: Anonymous</string>
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
+    }
+  });
+}
+
+async function handleRootRequest(request) {
+  const url = new URL(request.url);
+  const workerUrl = `https://${url.host}/dns-query`;
+  const workerHost = url.host;
+  const appleProfileUrl = `https://${url.host}/apple`;
+  
+  return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600'
     }
   });
 }
@@ -747,10 +781,8 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 1;
-        }
-            50% { opacity: 0.5;
-        }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         
         .status-text {
@@ -983,7 +1015,6 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
         
         <div class="status-bar">
             <div class="status-indicator"></div>
-          
             <div class="status-text">
                 <strong>فعال و آماده به کار</strong> - سیستم Parallel Racing و یادگیری تطبیقی فعال است
             </div>
@@ -991,9 +1022,8 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
         
         <div class="info-box">
             <strong>این یک سرویس DNS over HTTPS (DoH) پیشرفته با قابلیت‌های Anti-Censorship است.</strong><br>
-        
             نسخه Pro با تکنولوژی Parallel DNS Racing و یادگیری تطبیقی مبتنی بر هوش مصنوعی برای سرعت و قابلیت اطمینان بالاتر.
-</div>
+        </div>
 
         <h2>📍 آدرس سرویس شما:</h2>
         <div class="url-container">
@@ -1004,57 +1034,49 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
         <h2>✨ ویژگی‌های پیشرفته:</h2>
         <div class="feature-grid">
             <div class="feature-item">
-          
                 <div class="feature-icon">⚡</div>
                 <div class="feature-text">Parallel DNS Racing - همزمان 8 سرور برتر را امتحان می‌کند</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🧠</div>
-                <div class="feature-text">یادگیری تطبیقی مبتنی بر AI برای انتخاب 
-هوشمند سرورها</div>
+                <div class="feature-text">یادگیری تطبیقی مبتنی بر AI برای انتخاب هوشمند سرورها</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🔄</div>
                 <div class="feature-text">Load Balancing هوشمند بر اساس سرعت و قابلیت اطمینان</div>
             </div>
             <div class="feature-item">
-       
                 <div class="feature-icon">🛡️</div>
                 <div class="feature-text">رمزنگاری کامل تمام درخواست‌های DNS</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚙️</div>
                 <div class="feature-text">استفاده از 63 سرور DNS معتبر جهانی</div>
-    
-        </div>
+            </div>
             <div class="feature-item">
                 <div class="feature-icon">🚦</div>
                 <div class="feature-text">سیستم Health Check و Circuit Breaker خودکار</div>
             </div>
             <div class="feature-item">
-              
                 <div class="feature-icon">💾</div>
                 <div class="feature-text">Cache هوشمند برای سرعت بیشتر</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🎭</div>
                 <div class="feature-text">Random Delay و Decoy Requests برای ضد DPI</div>
-          
-  </div>
+            </div>
             <div class="feature-item">
                 <div class="feature-icon">🔐</div>
                 <div class="feature-text">Domain Fronting Simulation</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">📊</div>
-       
                 <div class="feature-text">امتیازدهی پویا: 40% سلامت، 35% سرعت، 25% قابلیت اطمینان</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🔄</div>
                 <div class="feature-text">Intelligent Fallback در صورت شکست Racing</div>
             </div>
-      
             <div class="feature-item">
                 <div class="feature-icon">🌐</div>
                 <div class="feature-text">بهره‌مندی از ECH در سرورهای Cloudflare</div>
@@ -1063,8 +1085,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
 
         <h2>🌐 DNS Providers استفاده شده:</h2>
         <div class="dns-list">
-            <div 
-class="dns-item">63 سرور DNS معتبر از کشورهای مختلف</div>
+            <div class="dns-item">63 سرور DNS معتبر از کشورهای مختلف</div>
             <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
             <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
             <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
@@ -1072,47 +1093,39 @@ class="dns-item">63 سرور DNS معتبر از کشورهای مختلف</div>
             <div class="dns-item">• و 50+ سرور دیگر...</div>
         </div>
 
-  
         <div class="info-box">
             <strong>✅ این DoH Proxy چه کارهایی انجام می‌دهد:</strong><br><br>
             • <span class="success-highlight">رمزنگاری کامل درخواست‌های DNS</span> - درخواست‌های شما از طریق HTTPS رمزنگاری می‌شوند<br>
             • <span class="success-highlight">دور زدن DNS Poisoning</span> - از دستکاری پاسخ‌های DNS جلوگیری می‌کند<br>
-            • <span class="success-highlight">باز کردن وب‌سایت‌های فیلتر شده با DNS</span> - اگر سایتی فقط 
-در لایه DNS مسدود شده باشد، با این DoH قابل دسترسی می‌شود<br>
+            • <span class="success-highlight">باز کردن وب‌سایت‌های فیلتر شده با DNS</span> - اگر سایتی فقط در لایه DNS مسدود شده باشد، با این DoH قابل دسترسی می‌شود<br>
             • <span class="success-highlight">افزایش حریم خصوصی</span> - ISP نمی‌تواند ببیند به چه دامنه‌هایی Query می‌زنید<br>
             • <span class="success-highlight">بهبود امنیت</span> - از حملات Man-in-the-Middle در لایه DNS جلوگیری می‌کند<br>
             • <span class="success-highlight">سرعت بالاتر</span> - با Racing Mode اولین پاسخ سریع را دریافت می‌کنید
         </div>
 
-       
- <div class="warning-box">
+        <div class="warning-box">
             <strong>💡 درک انواع فیلترینگ:</strong><br><br>
             فیلترینگ در شبکه در لایه‌های مختلف انجام می‌شود:<br><br>
             
-            <strong>1.
-DNS Filtering (فیلترینگ DNS):</strong><br>
+            <strong>1. DNS Filtering (فیلترینگ DNS):</strong><br>
             • سایت در سطح DNS مسدود می‌شود<br>
             • <span class="success-highlight">✓ این DoH Proxy این نوع فیلترینگ را دور می‌زند</span><br>
             • مثال: بسیاری از وب‌سایت‌ها در کشورهای مختلف<br><br>
             
-            <strong>2.
-SNI Filtering (فیلترینگ SNI):</strong><br>
+            <strong>2. SNI Filtering (فیلترینگ SNI):</strong><br>
             • سایت بر اساس Server Name Indication مسدود می‌شود<br>
             • ✗ این DoH به تنهایی کافی نیست (نیاز به ECH یا ابزار اضافی)<br><br>
             
-            <strong>3.
-IP Blocking (مسدودسازی IP):</strong><br>
+            <strong>3. IP Blocking (مسدودسازی IP):</strong><br>
             • آدرس IP سرور مستقیماً مسدود می‌شود<br>
             • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN)<br><br>
             
-            <strong>4.
-Deep Packet Inspection - DPI:</strong><br>
+            <strong>4. Deep Packet Inspection - DPI:</strong><br>
             • بررسی عمیق محتوای بسته‌های شبکه<br>
             • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN یا پروکسی پیشرفته)<br><br>
             
-            <strong>نتیجه:</strong> اگر سایت مورد نظر شما فقط با DNS فیلتر شده، این DoH کافی است.
-اگر از روش‌های دیگر فیلتر شده، به VPN نیاز دارید.
-</div>
+            <strong>نتیجه:</strong> اگر سایت مورد نظر شما فقط با DNS فیلتر شده، این DoH کافی است. اگر از روش‌های دیگر فیلتر شده، به VPN نیاز دارید.
+        </div>
 
         <h2>📱 نحوه استفاده:</h2>
         
@@ -1120,7 +1133,6 @@ Deep Packet Inspection - DPI:</strong><br>
             <h3>🌐 مرورگرها (Firefox, Chrome, Edge, Brave)</h3>
             <p>بروید به تنظیمات مرورگر → بخش Privacy یا Security → DNS over HTTPS → انتخاب Custom Provider و آدرس بالا را وارد کنید.</p>
             <p><strong>فعال‌سازی ECH در Firefox:</strong><br>
-       
             1. در آدرس‌بار تایپ کنید: about:config<br>
             2. جستجو کنید: network.dns.echconfig.enabled<br>
             3. مقدار را روی true قرار دهید</p>
@@ -1129,32 +1141,26 @@ Deep Packet Inspection - DPI:</strong><br>
 
         <div class="usage-card">
             <h3>📱 اپلیکیشن Intra (اندروید)</h3>
- 
-            <p>1.
-اپلیکیشن Intra را از Google Play نصب کنید<br>
+            <p>1. اپلیکیشن Intra را از Google Play نصب کنید<br>
             2. اپلیکیشن را باز کنید<br>
             3. روی گزینه "Configure custom server URL" بزنید<br>
             4. آدرس زیر را در قسمت Custom DNS over HTTPS server URL وارد کنید:</p>
             <div class="url-container">
                 <div class="url-box">${workerUrl}</div>
-   
-         </div>
-            <p>5.
-دکمه ON را فعال کنید</p>
+            </div>
+            <p>5. دکمه ON را فعال کنید</p>
             <p>این تنظیم DNS شما را رمزنگاری می‌کند و سایت‌هایی که فقط با DNS فیلتر شده‌اند را باز می‌کند.</p>
         </div>
 
         <div class="usage-card">
             <h3>🍎 iOS, iPadOS و macOS</h3>
             <p>برای استفاده در دستگاه‌های اپل، کافی است پروفایل شخصی خود را دانلود و نصب کنید:</p>
-        
-    <a href="${appleProfileUrl}" class="download-btn">🍎 دانلود پروفایل iOS/macOS</a>
+            <a href="${appleProfileUrl}" class="download-btn">🍎 دانلود پروفایل iOS/macOS</a>
             <br><br>
             <p><strong>نحوه نصب:</strong><br>
             • <strong>iOS/iPadOS:</strong> فایل را با Safari دانلود کنید → Settings → General → VPN, DNS & Device Management → Downloaded Profile → Install<br>
             • <strong>macOS:</strong> فایل را دانلود کنید → System Settings → Privacy & Security → Profiles → نصب پروفایل</p>
-   
-         <p>پس از نصب، DNS همه اپلیکیشن‌های شما رمزنگاری می‌شود.</p>
+            <p>پس از نصب، DNS همه اپلیکیشن‌های شما رمزنگاری می‌شود.</p>
         </div>
 
         <div class="usage-card">
@@ -1162,8 +1168,7 @@ Deep Packet Inspection - DPI:</strong><br>
             <p>برای استفاده در کلاینت‌های مبتنی بر Xray، می‌توانید از کانفیگ زیر استفاده کنید:</p>
             <div class="code-box" id="xrayConfig">{
   "remarks": "🛡️ DoH Proxy Pro",
-  
-"dns": {
+  "dns": {
     "servers": [
       {
         "address": "${workerUrl}",
@@ -1179,8 +1184,7 @@ Deep Packet Inspection - DPI:</strong><br>
       "protocol": "socks",
       "settings": {
         "auth": "noauth",
-        "udp": 
-true
+        "udp": true
       },
       "sniffing": {
         "enabled": true,
@@ -1198,8 +1202,7 @@ true
     }
   ],
   "routing": {
-    
-"domainStrategy": "AsIs",
+    "domainStrategy": "AsIs",
     "rules": [
       {
         "type": "field",
@@ -1211,8 +1214,7 @@ true
 }</div>
             <button class="copy-btn" onclick="copyToClipboard('xrayConfig')">📋 کپی کانفیگ Xray</button>
             <br><br>
-            <p><strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند 
-و سایت‌های فیلتر شده با DNS را باز می‌کند.</p>
+            <p><strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند و سایت‌های فیلتر شده با DNS را باز می‌کند.</p>
         </div>
 
         <div class="usage-card">
@@ -1221,8 +1223,7 @@ true
             <div class="code-box" id="xrayFragmentConfig">{
   "remarks": "🛡️ DoH Proxy + Fragment",
   "log": {
-  
-  "access": "",
+    "access": "",
     "error": "",
     "loglevel": "none",
     "dnsLog": false
@@ -1238,8 +1239,7 @@ true
         "104.16.124.175",
         "104.16.248.249",
         "104.16.249.249",
-    
-    "104.26.13.8"
+        "104.26.13.8"
       ],
       "domain:youtube.com": [
         "google.com"
@@ -1256,8 +1256,7 @@ true
         "tls"
       ],
       "protocol": "socks",
-     
- "tag": "socks-in",
+      "tag": "socks-in",
       "listen": "127.0.0.1",
       "port": 10808,
       "settings": {
@@ -1269,8 +1268,7 @@ true
         "enabled": true,
         "destOverride": [
           "http",
-         
- "tls"
+          "tls"
         ]
       }
     },
@@ -1285,8 +1283,7 @@ true
       "sniffing": {
         "enabled": true,
         "destOverride": [
-  
-        "http",
+          "http",
           "tls"
         ]
       }
@@ -1300,8 +1297,7 @@ true
       "sniffing": {
         "enabled": true,
         "destOverride": [
-         
- "http",
+          "http",
           "tls"
         ]
       },
@@ -1313,8 +1309,7 @@ true
         }
       },
       "streamSettings": {
-     
-   "sockopt": {
+        "sockopt": {
           "tcpNoDelay": true,
           "tcpKeepAliveIdle": 100,
           "mark": 255,
@@ -1328,8 +1323,7 @@ true
     },
     {
       "protocol": "vless",
- 
-     "tag": "fakeproxy-out",
+      "tag": "fakeproxy-out",
       "domainStrategy": "",
       "settings": {
         "vnext": [
@@ -1338,15 +1332,13 @@ true
             "port": 443,
             "users": [
               {
-        
-        "encryption": "none",
+                "encryption": "none",
                 "flow": "",
                 "id": "UUID",
                 "level": 8,
                 "security": "auto"
               }
-         
-   ]
+            ]
           }
         ]
       },
@@ -1357,8 +1349,7 @@ true
           "allowInsecure": false,
           "alpn": [
             "h2",
-     
-       "http/1.1"
+            "http/1.1"
           ],
           "fingerprint": "randomized",
           "publicKey": "",
@@ -1367,8 +1358,7 @@ true
           "show": false,
           "spiderX": ""
         },
-        "wsSettings": 
-{
+        "wsSettings": {
           "headers": {
             "Host": "google.com"
           },
@@ -1382,8 +1372,7 @@ true
     }
   ],
   "policy": {
- 
-   "levels": {
+    "levels": {
       "8": {
         "connIdle": 300,
         "downlinkOnly": 1,
@@ -1399,8 +1388,7 @@ true
   "routing": {
     "domainStrategy": "IPIfNonMatch",
     "rules": [
-     
- {
+      {
         "inboundTag": [
           "socks-in",
           "http-in"
@@ -1412,8 +1400,7 @@ true
       },
       {
         "inboundTag": [
-     
-     "socks-in",
+          "socks-in",
           "http-in"
         ],
         "type": "field",
@@ -1427,15 +1414,13 @@ true
   "stats": {}
 }</div>
             <button class="copy-btn" onclick="copyToClipboard('xrayFragmentConfig')">📋 کپی کانفیگ Fragment</button>
-    
-        <br><br>
+            <br><br>
             <p><strong>مزایای کانفیگ Fragment:</strong><br>
             • قابلیت Fragment برای دور زدن DPI<br>
             • تکه‌تکه کردن بسته‌های TLS Hello<br>
             • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته<br>
             • پورت HTTP (10809) و SOCKS (10808)</p>
-       
- </div>
+        </div>
 
         <div class="usage-card">
             <h3>💻 ویندوز 10/11</h3>
@@ -1444,17 +1429,13 @@ true
 
         <div class="usage-card">
             <h3>🐧 لینوکس</h3>
-       
-     <p><strong>استفاده از systemd-resolved:</strong><br>
+            <p><strong>استفاده از systemd-resolved:</strong><br>
             1. ویرایش فایل تنظیمات:<br>
-            <code style="background: #0d1117;
-padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo nano /etc/systemd/resolved.conf</code></p>
+            <code style="background: #0d1117; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo nano /etc/systemd/resolved.conf</code></p>
             <p>2. اضافه کردن این خطوط:<br>
-            <code style="background: #0d1117;
-padding: 10px; border-radius: 4px; display: block; margin: 10px 0;">[Resolve]<br>DNS=${workerUrl}<br>DNSOverTLS=yes</code></p>
+            <code style="background: #0d1117; padding: 10px; border-radius: 4px; display: block; margin: 10px 0;">[Resolve]<br>DNS=${workerUrl}<br>DNSOverTLS=yes</code></p>
             <p>3. ری‌استارت سرویس:<br>
-            <code style="background: #0d1117;
-padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo systemctl restart systemd-resolved</code></p>
+            <code style="background: #0d1117; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo systemctl restart systemd-resolved</code></p>
         </div>
 
         <div class="usage-card">
@@ -1462,23 +1443,20 @@ padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">su
             <p>بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید. با تنظیم DoH در روتر، تمام دستگاه‌های متصل به شبکه از DNS رمزنگاری شده استفاده می‌کنند.</p>
         </div>
 
-     
-    <h2>🛡️ توصیه‌های امنیتی:</h2>
+        <h2>🛡️ توصیه‌های امنیتی:</h2>
         <div class="info-box">
             <strong>برای حداکثر امنیت و دسترسی:</strong><br><br>
             <strong>سناریو 1 - فقط فیلترینگ DNS:</strong><br>
             ✓ از این DoH Proxy استفاده کنید<br>
             ✓ بسیاری از سایت‌ها قابل دسترسی می‌شوند<br><br>
             
-     
-        <strong>سناریو 2 - فیلترینگ پیشرفته‌تر:</strong><br>
+            <strong>سناریو 2 - فیلترینگ پیشرفته‌تر:</strong><br>
             ✓ از این DoH Proxy استفاده کنید<br>
             ✓ ECH را در مرورگر فعال کنید<br>
             ✓ از کانفیگ Fragment در Xray استفاده کنید<br>
             ✓ از VPN برای لایه‌های دیگر استفاده کنید<br><br>
             
-   
-          <strong>نکات عمومی:</strong><br>
+            <strong>نکات عمومی:</strong><br>
             • از مرورگرهای به‌روز استفاده کنید<br>
             • HTTPS را همیشه فعال نگه دارید<br>
             • از نرم‌افزارهای امنیتی معتبر استفاده کنید<br>
@@ -1486,44 +1464,34 @@ padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">su
         </div>
 
         <h2>❓ سوالات متداول:</h2>
-  
-       <div class="info-box">
+        <div class="info-box">
             <strong>Q: آیا با این DoH می‌توانم به سایت‌های فیلتر شده دسترسی داشته باشم؟</strong><br>
-            A: بله، اگر سایت فقط با DNS فیلتر شده باشد.
-اگر از روش‌های دیگر (IP blocking, DPI) فیلتر شده، به VPN نیاز دارید.<br><br>
+            A: بله، اگر سایت فقط با DNS فیلتر شده باشد. اگر از روش‌های دیگر (IP blocking, DPI) فیلتر شده، به VPN نیاز دارید.<br><br>
             
             <strong>Q: Fragment چیست و چه کمکی می‌کند؟</strong><br>
-            A: Fragment یک تکنیک ضد فیلترینگ است که بسته‌های TLS Hello را تکه‌تکه می‌کند و از شناسایی توسط DPI جلوگیری می‌کند.
-استفاده از کانفیگ Fragment در کنار DoH می‌تواند به دور زدن فیلترینگ‌های پیشرفته‌تر کمک کند.<br><br>
+            A: Fragment یک تکنیک ضد فیلترینگ است که بسته‌های TLS Hello را تکه‌تکه می‌کند و از شناسایی توسط DPI جلوگیری می‌کند. استفاده از کانفیگ Fragment در کنار DoH می‌تواند به دور زدن فیلترینگ‌های پیشرفته‌تر کمک کند.<br><br>
             
             <strong>Q: ECH چیست و چگونه کمک می‌کند؟</strong><br>
-            A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند.
-برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
+            A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
             
             <strong>Q: این DoH چه تفاوتی با 1.1.1.1 دارد؟</strong><br>
-            A: این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی، Decoy Requests).
-در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
+            A: این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی, Decoy Requests). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
             
             <strong>Q: آیا این سرویس رایگان است؟</strong><br>
             A: بله، اگر در محدوده رایگان Cloudflare Workers باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
             
-            <strong>Q: آیا این سرویس سرعت اینترنت من 
-را کاهش می‌دهد؟</strong><br>
+            <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
             A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و با Racing Mode اولین پاسخ سریع را دریافت می‌کنید.<br><br>
             
             <strong>Q: چه تفاوتی بین کانفیگ ساده و کانفیگ Fragment وجود دارد؟</strong><br>
-            A: کانفیگ ساده فقط DoH را فعال می‌کند و برای دور زدن فیلترینگ DNS کافی است.
-کانفیگ Fragment علاوه بر DoH، قابلیت Fragment را هم دارد که به دور زدن فیلترینگ‌های پیشرفته‌تر (DPI) کمک می‌کند.
-برای حداکثر امنیت، استفاده از کانفیگ Fragment توصیه می‌شود.<br><br>
+            A: کانفیگ ساده فقط DoH را فعال می‌کند و برای دور زدن فیلترینگ DNS کافی است. کانفیگ Fragment علاوه بر DoH، قابلیت Fragment را هم دارد که به دور زدن فیلترینگ‌های پیشرفته‌تر (DPI) کمک می‌کند. برای حداکثر امنیت، استفاده از کانفیگ Fragment توصیه می‌شود.<br><br>
             
             <strong>Q: آیا کسی می‌تواند ببیند من از این سرویس استفاده می‌کنم؟</strong><br>
-            A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند.
-فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.<br><br>
+            A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند. فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.<br><br>
             
             <strong>Q: تکنولوژی Parallel Racing چگونه کار می‌کند؟</strong><br>
-            A: این سیستم همزمان به 8 سرور DNS برتر درخواست می‌فرستد و اولین پاسخ سریع را قبول می‌کند.
-این باعث کاهش latency و افزایش قابلیت اطمینان می‌شود، به‌خصوص زمانی که برخی سرورها کند یا غیرقابل دسترس هستند.
-</div>
+            A: این سیستم همزمان به 8 سرور DNS برتر درخواست می‌فرستد و اولین پاسخ سریع را قبول می‌کند. این باعث کاهش latency و افزایش قابلیت اطمینان می‌شود، به‌خصوص زمانی که برخی سرورها کند یا غیرقابل دسترس هستند.
+        </div>
 
         <div class="footer">
             <p>Designed by: <a href="https://t.me/BXAMbot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
@@ -1534,48 +1502,48 @@ padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">su
     <script>
         function copyToClipboard(elementId) {
             const element = document.getElementById(elementId);
-const text = element.textContent;
+            const text = element.textContent;
             const btn = event.target;
             const originalHTML = btn.innerHTML;
-if (navigator.clipboard && navigator.clipboard.writeText) {
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     btn.classList.add('copied');
                     btn.innerHTML = '✓ کپی شد!';
                     setTimeout(() => {
-            
-            btn.classList.remove('copied');
+                        btn.classList.remove('copied');
                         btn.innerHTML = originalHTML;
                     }, 2000);
                 }).catch(() => {
                     fallbackCopy(text, btn, originalHTML);
- 
-               });
-} else {
+                });
+            } else {
                 fallbackCopy(text, btn, originalHTML);
-}
+            }
         }
         
         function fallbackCopy(text, btn, originalHTML) {
             const textArea = document.createElement('textarea');
-textArea.value = text;
+            textArea.value = text;
             textArea.style.position = 'fixed';
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
             textArea.select();
-try {
+            
+            try {
                 document.execCommand('copy');
                 btn.classList.add('copied');
-btn.innerHTML = '✓ کپی شد!';
+                btn.innerHTML = '✓ کپی شد!';
                 setTimeout(() => {
                     btn.classList.remove('copied');
                     btn.innerHTML = originalHTML;
                 }, 2000);
-} catch (err) {
+            } catch (err) {
                 btn.innerHTML = '❌ خطا در کپی';
-setTimeout(() => {
+                setTimeout(() => {
                     btn.innerHTML = originalHTML;
                 }, 2000);
-}
+            }
             document.body.removeChild(textArea);
         }
     </script>
@@ -1583,26 +1551,15 @@ setTimeout(() => {
 </html>`;
 }
 
-function handleRootRequest(request) {
+export const onRequest = async (context) => {
+  const { request } = context;
   const url = new URL(request.url);
-  const workerUrl = `https://${url.host}/dns-query`;
-  const workerHost = url.host;
-  const appleProfileUrl = `https://${url.host}/apple`;
-  return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600'
-    }
-  });
-}
 
-export async function onRequest(context) {
-  const request = context.request;
-  const url = new URL(request.url);
-  
   if (url.pathname === '/dns-query') {
-    return handleDNSQuery(request);
+    context.waitUntil(performHealthCheck());
+    context.waitUntil(performAdaptiveLearning());
+    context.waitUntil(sendDecoyRequests());
+    return await handleDNSQuery(request);
   } else if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   } else if (url.pathname === '/health') {
@@ -1632,6 +1589,6 @@ export async function onRequest(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } else {
-    return handleRootRequest(request);
+    return await handleRootRequest(request);
   }
-}
+};
