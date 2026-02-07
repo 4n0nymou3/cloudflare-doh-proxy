@@ -319,11 +319,7 @@ async function raceMultipleProviders(dnsQuery, headers) {
         method: 'POST',
         headers: requestHeaders,
         body: dnsQuery,
-        signal: controller.signal,
-        cf: {
-          cacheTtl: DNS_CACHE_TTL_DEFAULT,
-          cacheEverything: true
-        }
+        signal: controller.signal
       });
       
       clearTimeout(timeoutId);
@@ -1475,10 +1471,10 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
             
             <strong>Q: این DoH چه تفاوتی با 1.1.1.1 دارد؟</strong><br>
-            A: این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی, Decoy Requests). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
+            A: این DoH Proxy شخصی شماست که روی Cloudflare Pages اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی، Decoy Requests). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
             
             <strong>Q: آیا این سرویس رایگان است؟</strong><br>
-            A: بله، اگر در محدوده رایگان Cloudflare Workers باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
+            A: بله، Cloudflare Pages کاملاً رایگان است و محدودیت ترافیک ندارد.<br><br>
             
             <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
             A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و با Racing Mode اولین پاسخ سریع را دریافت می‌کنید.<br><br>
@@ -1551,15 +1547,12 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
 </html>`;
 }
 
-export const onRequest = async (context) => {
+export async function onRequest(context) {
   const { request } = context;
   const url = new URL(request.url);
-
+  
   if (url.pathname === '/dns-query') {
-    context.waitUntil(performHealthCheck());
-    context.waitUntil(performAdaptiveLearning());
-    context.waitUntil(sendDecoyRequests());
-    return await handleDNSQuery(request);
+    return handleDNSQuery(request);
   } else if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   } else if (url.pathname === '/health') {
@@ -1589,6 +1582,6 @@ export const onRequest = async (context) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } else {
-    return await handleRootRequest(request);
+    return handleRootRequest(request);
   }
-};
+}
