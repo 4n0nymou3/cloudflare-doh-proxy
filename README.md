@@ -57,7 +57,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 - مدیریت آسان‌تر
 - بدون نیاز به GitHub
 
-**فایل مورد نیاز:** [`manual-worker/worker.js`](manual-worker/worker.js)
+**فایل مورد نیاز:** [`worker`](manual-worker/worker.js)
 
 ### 2️⃣ Cloudflare Pages
 
@@ -68,7 +68,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 - آپدیت خودکار با هر Push
 - قابلیت CI/CD
 
-**فایل مورد نیاز:** [`functions/[[path]].js`](functions/[[path]].js)
+**فایل مورد نیاز:** [`pages`](functions/[[path]].js)
 
 ## 🚀 راهنمای نصب
 
@@ -87,7 +87,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 
 1. روی **Edit Code** کلیک کنید
 2. تمام کد پیش‌فرض را پاک کنید
-3. محتوای فایل [`manual-worker/worker.js`](manual-worker/worker.js) را کپی کرده و جایگذاری کنید
+3. محتوای فایل [`worker`](manual-worker/worker.js) را کپی کرده و جایگذاری کنید
 4. روی **Save and Deploy** کلیک کنید
 
 #### مرحله 3: دریافت URL
@@ -103,7 +103,7 @@ https://your-worker-name.your-subdomain.workers.dev/dns-query
 #### مرحله 1: Fork کردن ریپازیتوری
 
 1. این ریپازیتوری را Fork کنید
-2. یا ریپازیتوری جدیدی بسازید و فایل [`functions/[[path]].js`](functions/[[path]].js) را در پوشه `functions/` قرار دهید
+2. یا ریپازیتوری جدیدی بسازید و فایل [`pages`](functions/[[path]].js) را در پوشه `functions/` قرار دهید
 
 #### مرحله 2: اتصال به Cloudflare Pages
 
@@ -393,19 +393,6 @@ const DECOY_REQUEST_PROBABILITY = 0.2;
 - از نرم‌افزارهای امنیتی معتبر استفاده کنید
 - رمزهای عبور قوی داشته باشید
 
-## 🏗️ معماری پروژه
-
-```
-cloudflare-doh-proxy/
-├── manual-worker/
-│   └── worker.js              # کد Cloudflare Workers
-├── functions/
-│   └── [[path]].js            # کد Cloudflare Pages
-├── xray-doh-proxy-client-config.jsonc  # کانفیگ Xray (قدیمی)
-├── LICENSE
-└── README.md
-```
-
 ## 🔗 لینک‌های مفید
 
 - [مستندات Cloudflare Workers](https://developers.cloudflare.com/workers/)
@@ -413,16 +400,6 @@ cloudflare-doh-proxy/
 - [RFC 8484 - DNS over HTTPS](https://datatracker.ietf.org/doc/html/rfc8484)
 - [Cloudflare DNS](https://1.1.1.1/)
 - [اپلیکیشن Intra](https://getintra.org/)
-
-## 🤝 مشارکت
-
-مشارکت‌ها همیشه خوش‌آمد هستند! لطفاً:
-
-1. این ریپازیتوری را Fork کنید
-2. یک Branch جدید بسازید (`git checkout -b feature/AmazingFeature`)
-3. تغییرات خود را Commit کنید (`git commit -m 'Add some AmazingFeature'`)
-4. به Branch خود Push کنید (`git push origin feature/AmazingFeature`)
-5. یک Pull Request باز کنید
 
 ## 📝 مجوز
 
