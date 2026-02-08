@@ -153,6 +153,7 @@ function calculateProviderScore(provider) {
   }
   
   const freshnessPenalty = Math.min(20, timeSinceLastCheck / 10000);
+  
   const totalScore = (healthScore * healthWeight) + 
                     (speedScore * speedWeight) + 
                     (reliabilityScore * reliabilityWeight) - 
@@ -183,7 +184,6 @@ function selectBestProviders(count) {
   
   const diversityBonus = scoredProviders.slice(0, Math.min(20, scoredProviders.length));
   const randomIndex = Math.floor(Math.random() * Math.min(5, diversityBonus.length));
-  
   if (randomIndex > 0 && diversityBonus[randomIndex]) {
     [diversityBonus[0], diversityBonus[randomIndex]] = [diversityBonus[randomIndex], diversityBonus[0]];
   }
@@ -257,7 +257,7 @@ async function performHealthCheck() {
   const providersToCheck = UPSTREAM_DNS_PROVIDERS
     .filter(p => now - p.lastCheck > HEALTH_CHECK_INTERVAL)
     .slice(0, 10);
-    
+  
   const healthCheckPromises = providersToCheck.map(async (provider) => {
     const startTime = Date.now();
     try {
@@ -319,11 +319,7 @@ async function raceMultipleProviders(dnsQuery, headers) {
         method: 'POST',
         headers: requestHeaders,
         body: dnsQuery,
-        signal: controller.signal,
-        cf: {
-          cacheTtl: DNS_CACHE_TTL_DEFAULT,
-          cacheEverything: true
-        }
+        signal: controller.signal
       });
       
       clearTimeout(timeoutId);
@@ -348,6 +344,7 @@ async function raceMultipleProviders(dnsQuery, headers) {
         provider: provider.url,
         responseTime: responseTime
       };
+      
     } catch (error) {
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
@@ -364,7 +361,7 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
     .filter(p => !excludeProviders.includes(p.url) && p.healthScore > 20)
     .sort((a, b) => calculateProviderScore(b) - calculateProviderScore(a))
     .slice(0, 5);
-    
+  
   for (const provider of availableProviders) {
     const startTime = Date.now();
     const controller = new AbortController();
@@ -470,6 +467,7 @@ function extractTTL(dnsResponse) {
 
 function isRateLimited(clientIP) {
   const now = Date.now();
+  
   if (now - lastCleanupTime > RATE_LIMIT_CLEANUP_INTERVAL) {
     const cutoff = now - RATE_LIMIT_WINDOW;
     for (const [ip, data] of rateLimitMap.entries()) {
@@ -481,6 +479,7 @@ function isRateLimited(clientIP) {
   }
   
   let clientData = rateLimitMap.get(clientIP);
+  
   if (!clientData || now - clientData.windowStart > RATE_LIMIT_WINDOW) {
     clientData = {
       count: 0,
@@ -605,6 +604,7 @@ async function handleDNSQuery(request) {
         'X-Response-Time': `${result.responseTime}ms`
       }
     });
+    
   } catch (error) {
     return new Response('DNS query failed', { 
       status: 502,
@@ -625,7 +625,7 @@ function generateAppleProfile(requestUrl) {
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
   const uuid3 = crypto.randomUUID();
-  
+
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -659,7 +659,7 @@ function generateAppleProfile(requestUrl) {
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
 
-    Designed by: Anonymous</string>
+Designed by: Anonymous</string>
     <key>PayloadDisplayName</key>
     <string>Anonymous DoH Proxy - ${hostname}</string>
     <key>PayloadIdentifier</key>
@@ -683,6 +683,21 @@ function generateAppleProfile(requestUrl) {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
+    }
+  });
+}
+
+async function handleRootRequest(request) {
+  const url = new URL(request.url);
+  const workerUrl = `https://${url.host}/dns-query`;
+  const workerHost = url.host;
+  const appleProfileUrl = `https://${url.host}/apple`;
+  
+  return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600'
     }
   });
 }
@@ -1268,8 +1283,9 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
           "tls"
         ]
       }
-    },
-    "outbounds": [
+    }
+  ],
+  "outbounds": [
     {
       "protocol": "freedom",
       "tag": "fragment-out",
@@ -1458,7 +1474,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             A: این DoH Proxy شخصی شماست که روی Cloudflare Pages اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی، Decoy Requests). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
             
             <strong>Q: آیا این سرویس رایگان است؟</strong><br>
-            A: بله، اگر در محدوده رایگان Cloudflare Pages (Workers) باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
+            A: بله، Cloudflare Pages کاملاً رایگان است و محدودیت ترافیک ندارد.<br><br>
             
             <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
             A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و با Racing Mode اولین پاسخ سریع را دریافت می‌کنید.<br><br>
@@ -1485,6 +1501,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             const text = element.textContent;
             const btn = event.target;
             const originalHTML = btn.innerHTML;
+            
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     btn.classList.add('copied');
@@ -1508,6 +1525,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
             textArea.select();
+            
             try {
                 document.execCommand('copy');
                 btn.classList.add('copied');
@@ -1530,7 +1548,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
 }
 
 export async function onRequest(context) {
-  const request = context.request;
+  const { request } = context;
   const url = new URL(request.url);
   
   if (url.pathname === '/dns-query') {
@@ -1564,15 +1582,6 @@ export async function onRequest(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } else {
-    const workerUrl = `https://${url.host}/dns-query`;
-    const workerHost = url.host;
-    const appleProfileUrl = `https://${url.host}/apple`;
-    return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600'
-      }
-    });
+    return handleRootRequest(request);
   }
 }
