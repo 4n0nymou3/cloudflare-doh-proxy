@@ -74,6 +74,7 @@ const MAX_DNS_RESPONSE_SIZE = 4096;
 const MAX_DNS_REQUEST_SIZE = 512;
 const HEALTH_CHECK_INTERVAL = 120000;
 const ADAPTIVE_LEARNING_INTERVAL = 300000;
+const PROVIDER_ROTATION_INTERVAL = 60000;
 const RATE_LIMIT_REQUESTS = 150;
 const RATE_LIMIT_WINDOW = 60000;
 const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
@@ -84,9 +85,12 @@ const DECOY_REQUEST_PROBABILITY = 0.2;
 
 const dnsCache = new Map();
 const rateLimitMap = new Map();
+const pendingRequests = new Map();
+const providerMetrics = new Map();
 let lastCleanupTime = Date.now();
 let lastHealthCheck = Date.now();
 let lastAdaptiveLearning = Date.now();
+let lastProviderRotation = Date.now();
 let concurrentRequests = 0;
 let globalRequestCount = 0;
 
@@ -108,14 +112,6 @@ const ACCEPT_HEADERS = [
   'application/dns-json',
   '*/*'
 ];
-
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
 
 function getRandomUserAgent() {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
@@ -157,7 +153,6 @@ function calculateProviderScore(provider) {
   }
   
   const freshnessPenalty = Math.min(20, timeSinceLastCheck / 10000);
-  
   const totalScore = (healthScore * healthWeight) + 
                     (speedScore * speedWeight) + 
                     (reliabilityScore * reliabilityWeight) - 
@@ -188,6 +183,7 @@ function selectBestProviders(count) {
   
   const diversityBonus = scoredProviders.slice(0, Math.min(20, scoredProviders.length));
   const randomIndex = Math.floor(Math.random() * Math.min(5, diversityBonus.length));
+  
   if (randomIndex > 0 && diversityBonus[randomIndex]) {
     [diversityBonus[0], diversityBonus[randomIndex]] = [diversityBonus[randomIndex], diversityBonus[0]];
   }
@@ -261,23 +257,25 @@ async function performHealthCheck() {
   const providersToCheck = UPSTREAM_DNS_PROVIDERS
     .filter(p => now - p.lastCheck > HEALTH_CHECK_INTERVAL)
     .slice(0, 10);
-  
+    
   const healthCheckPromises = providersToCheck.map(async (provider) => {
     const startTime = Date.now();
     try {
-      const response = await Promise.race([
-        fetch(provider.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/dns-message',
-            'Accept': 'application/dns-message',
-            'User-Agent': getRandomUserAgent()
-          },
-          body: testQuery
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-      ]);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       
+      const response = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/dns-message',
+          'Accept': 'application/dns-message',
+          'User-Agent': getRandomUserAgent()
+        },
+        body: testQuery,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
@@ -297,74 +295,68 @@ async function performHealthCheck() {
 async function raceMultipleProviders(dnsQuery, headers) {
   const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT);
   
-  return new Promise((resolve, reject) => {
-    let resolved = false;
-    let errorCount = 0;
+  const racePromises = selectedProviders.map(async (provider) => {
+    const startTime = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), RACE_TIMEOUT);
     
-    selectedProviders.forEach(async (provider) => {
-      if (resolved) return;
+    try {
+      await sleep(getRandomDelay());
       
-      const startTime = Date.now();
+      const requestHeaders = {
+        'Content-Type': 'application/dns-message',
+        'Accept': getRandomAcceptHeader(),
+        'User-Agent': getRandomUserAgent(),
+        'Cache-Control': 'no-cache',
+        'DNT': '1'
+      };
       
-      try {
-        await sleep(getRandomDelay());
-        
-        const requestHeaders = {
-          'Content-Type': 'application/dns-message',
-          'Accept': getRandomAcceptHeader(),
-          'User-Agent': getRandomUserAgent(),
-          'Cache-Control': 'no-cache',
-          'DNT': '1'
-        };
-        
-        if (Math.random() < 0.3) {
-          requestHeaders['X-Forwarded-For'] = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
-        }
-        
-        const response = await Promise.race([
-          fetch(provider.url, {
-            method: 'POST',
-            headers: requestHeaders,
-            body: dnsQuery
-          }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), RACE_TIMEOUT))
-        ]);
-        
-        const responseTime = Date.now() - startTime;
-        
-        if (!response.ok) {
-          updateProviderMetrics(provider, false, responseTime);
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const responseData = await response.arrayBuffer();
-        
-        if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
-          updateProviderMetrics(provider, false, responseTime);
-          throw new Error('Response too large');
-        }
-        
-        updateProviderMetrics(provider, true, responseTime);
-        
-        if (!resolved) {
-          resolved = true;
-          resolve({
-            data: responseData,
-            provider: provider.url,
-            responseTime: responseTime
-          });
-        }
-        
-      } catch (error) {
-        const responseTime = Date.now() - startTime;
-        updateProviderMetrics(provider, false, responseTime);
-        errorCount++;
-        if (errorCount >= selectedProviders.length && !resolved) {
-          reject(new Error('All providers failed'));
-        }
+      if (Math.random() < 0.3) {
+        requestHeaders['X-Forwarded-For'] = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
       }
-    });
+      
+      const response = await fetch(provider.url, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: dnsQuery,
+        signal: controller.signal,
+        cf: {
+          cacheTtl: DNS_CACHE_TTL_DEFAULT,
+          cacheEverything: true
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      const responseTime = Date.now() - startTime;
+      
+      if (!response.ok) {
+        updateProviderMetrics(provider, false, responseTime);
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const responseData = await response.arrayBuffer();
+      
+      if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
+        updateProviderMetrics(provider, false, responseTime);
+        throw new Error('Response too large');
+      }
+      
+      updateProviderMetrics(provider, true, responseTime);
+      
+      return {
+        data: responseData,
+        provider: provider.url,
+        responseTime: responseTime
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      const responseTime = Date.now() - startTime;
+      updateProviderMetrics(provider, false, responseTime);
+      throw error;
+    }
   });
+  
+  return Promise.any(racePromises);
 }
 
 async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = []) {
@@ -372,24 +364,25 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
     .filter(p => !excludeProviders.includes(p.url) && p.healthScore > 20)
     .sort((a, b) => calculateProviderScore(b) - calculateProviderScore(a))
     .slice(0, 5);
-  
+    
   for (const provider of availableProviders) {
     const startTime = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT);
     
     try {
-      const response = await Promise.race([
-        fetch(provider.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/dns-message',
-            'Accept': 'application/dns-message',
-            'User-Agent': getRandomUserAgent()
-          },
-          body: dnsQuery
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), FALLBACK_TIMEOUT))
-      ]);
+      const response = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/dns-message',
+          'Accept': 'application/dns-message',
+          'User-Agent': getRandomUserAgent()
+        },
+        body: dnsQuery,
+        signal: controller.signal
+      });
       
+      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
@@ -404,6 +397,7 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
       
       updateProviderMetrics(provider, false, responseTime);
     } catch (error) {
+      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       updateProviderMetrics(provider, false, responseTime);
     }
@@ -476,7 +470,6 @@ function extractTTL(dnsResponse) {
 
 function isRateLimited(clientIP) {
   const now = Date.now();
-  
   if (now - lastCleanupTime > RATE_LIMIT_CLEANUP_INTERVAL) {
     const cutoff = now - RATE_LIMIT_WINDOW;
     for (const [ip, data] of rateLimitMap.entries()) {
@@ -488,7 +481,6 @@ function isRateLimited(clientIP) {
   }
   
   let clientData = rateLimitMap.get(clientIP);
-  
   if (!clientData || now - clientData.windowStart > RATE_LIMIT_WINDOW) {
     clientData = {
       count: 0,
@@ -528,15 +520,6 @@ async function sendDecoyRequests() {
   } catch (e) {}
 }
 
-function base64ToArrayBuffer(base64) {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
 async function handleDNSQuery(request) {
   const url = new URL(request.url);
   const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -563,7 +546,7 @@ async function handleDNSQuery(request) {
     try {
       const paddedDns = dnsParam.replace(/-/g, '+').replace(/_/g, '/');
       const padding = '='.repeat((4 - (paddedDns.length % 4)) % 4);
-      dnsQuery = base64ToArrayBuffer(paddedDns + padding);
+      dnsQuery = Uint8Array.from(atob(paddedDns + padding), c => c.charCodeAt(0)).buffer;
     } catch (e) {
       return new Response('Invalid dns parameter', { status: 400 });
     }
@@ -622,7 +605,6 @@ async function handleDNSQuery(request) {
         'X-Response-Time': `${result.responseTime}ms`
       }
     });
-    
   } catch (error) {
     return new Response('DNS query failed', { 
       status: 502,
@@ -640,10 +622,10 @@ function generateAppleProfile(requestUrl) {
   const baseUrl = new URL(requestUrl);
   const dohUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const hostname = baseUrl.hostname;
-  const uuid1 = generateUUID();
-  const uuid2 = generateUUID();
-  const uuid3 = generateUUID();
-
+  const uuid1 = crypto.randomUUID();
+  const uuid2 = crypto.randomUUID();
+  const uuid3 = crypto.randomUUID();
+  
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -676,8 +658,7 @@ function generateAppleProfile(requestUrl) {
     </array>
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
-
-Designed by: Anonymous</string>
+    Designed by: Anonymous</string>
     <key>PayloadDisplayName</key>
     <string>Anonymous DoH Proxy - ${hostname}</string>
     <key>PayloadIdentifier</key>
@@ -701,21 +682,6 @@ Designed by: Anonymous</string>
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'
-    }
-  });
-}
-
-async function handleRootRequest(request) {
-  const url = new URL(request.url);
-  const workerUrl = `https://${url.host}/dns-query`;
-  const workerHost = url.host;
-  const appleProfileUrl = `https://${url.host}/apple`;
-  
-  return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600'
     }
   });
 }
@@ -1301,9 +1267,8 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
           "tls"
         ]
       }
-    }
-  ],
-  "outbounds": [
+    },
+    "outbounds": [
     {
       "protocol": "freedom",
       "tag": "fragment-out",
@@ -1492,7 +1457,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             A: این DoH Proxy شخصی شماست که روی Cloudflare Pages اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Racing Mode, یادگیری تطبیقی، Decoy Requests). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
             
             <strong>Q: آیا این سرویس رایگان است؟</strong><br>
-            A: بله، Cloudflare Pages کاملاً رایگان است و محدودیت ترافیک ندارد.<br><br>
+            A: بله، اگر در محدوده رایگان Cloudflare Pages (Workers) باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
             
             <strong>Q: آیا این سرویس سرعت اینترنت من را کاهش می‌دهد؟</strong><br>
             A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و با Racing Mode اولین پاسخ سریع را دریافت می‌کنید.<br><br>
@@ -1519,7 +1484,6 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             const text = element.textContent;
             const btn = event.target;
             const originalHTML = btn.innerHTML;
-            
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
                     btn.classList.add('copied');
@@ -1543,7 +1507,6 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
             textArea.select();
-            
             try {
                 document.execCommand('copy');
                 btn.classList.add('copied');
@@ -1566,11 +1529,11 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
 }
 
 export async function onRequest(context) {
-  const { request } = context;
+  const request = context.request;
   const url = new URL(request.url);
   
   if (url.pathname === '/dns-query') {
-    return await handleDNSQuery(request);
+    return handleDNSQuery(request);
   } else if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   } else if (url.pathname === '/health') {
@@ -1588,7 +1551,8 @@ export async function onRequest(context) {
         avgResponseTime: Math.round(avgResponseTime)
       },
       cache: {
-        entries: dnsCache.size
+        entries: dnsCache.size,
+        hitRate: 'N/A'
       },
       requests: {
         concurrent: concurrentRequests,
@@ -1599,6 +1563,15 @@ export async function onRequest(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } else {
-    return await handleRootRequest(request);
+    const workerUrl = `https://${url.host}/dns-query`;
+    const workerHost = url.host;
+    const appleProfileUrl = `https://${url.host}/apple`;
+    return new Response(generateHTML(workerUrl, workerHost, appleProfileUrl), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600'
+      }
+    });
   }
 }
