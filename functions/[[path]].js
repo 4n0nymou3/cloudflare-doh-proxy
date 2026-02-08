@@ -74,7 +74,6 @@ const MAX_DNS_RESPONSE_SIZE = 4096;
 const MAX_DNS_REQUEST_SIZE = 512;
 const HEALTH_CHECK_INTERVAL = 120000;
 const ADAPTIVE_LEARNING_INTERVAL = 300000;
-const PROVIDER_ROTATION_INTERVAL = 60000;
 const RATE_LIMIT_REQUESTS = 150;
 const RATE_LIMIT_WINDOW = 60000;
 const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
@@ -85,12 +84,9 @@ const DECOY_REQUEST_PROBABILITY = 0.2;
 
 const dnsCache = new Map();
 const rateLimitMap = new Map();
-const pendingRequests = new Map();
-const providerMetrics = new Map();
 let lastCleanupTime = Date.now();
 let lastHealthCheck = Date.now();
 let lastAdaptiveLearning = Date.now();
-let lastProviderRotation = Date.now();
 let concurrentRequests = 0;
 let globalRequestCount = 0;
 
@@ -112,6 +108,14 @@ const ACCEPT_HEADERS = [
   'application/dns-json',
   '*/*'
 ];
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 function getRandomUserAgent() {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
@@ -261,21 +265,19 @@ async function performHealthCheck() {
   const healthCheckPromises = providersToCheck.map(async (provider) => {
     const startTime = Date.now();
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const response = await Promise.race([
+        fetch(provider.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/dns-message',
+            'Accept': 'application/dns-message',
+            'User-Agent': getRandomUserAgent()
+          },
+          body: testQuery
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
       
-      const response = await fetch(provider.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/dns-message',
-          'Accept': 'application/dns-message',
-          'User-Agent': getRandomUserAgent()
-        },
-        body: testQuery,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
@@ -295,65 +297,74 @@ async function performHealthCheck() {
 async function raceMultipleProviders(dnsQuery, headers) {
   const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT);
   
-  const racePromises = selectedProviders.map(async (provider) => {
-    const startTime = Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), RACE_TIMEOUT);
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    let errorCount = 0;
     
-    try {
-      await sleep(getRandomDelay());
+    selectedProviders.forEach(async (provider) => {
+      if (resolved) return;
       
-      const requestHeaders = {
-        'Content-Type': 'application/dns-message',
-        'Accept': getRandomAcceptHeader(),
-        'User-Agent': getRandomUserAgent(),
-        'Cache-Control': 'no-cache',
-        'DNT': '1'
-      };
+      const startTime = Date.now();
       
-      if (Math.random() < 0.3) {
-        requestHeaders['X-Forwarded-For'] = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
-      }
-      
-      const response = await fetch(provider.url, {
-        method: 'POST',
-        headers: requestHeaders,
-        body: dnsQuery,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      const responseTime = Date.now() - startTime;
-      
-      if (!response.ok) {
+      try {
+        await sleep(getRandomDelay());
+        
+        const requestHeaders = {
+          'Content-Type': 'application/dns-message',
+          'Accept': getRandomAcceptHeader(),
+          'User-Agent': getRandomUserAgent(),
+          'Cache-Control': 'no-cache',
+          'DNT': '1'
+        };
+        
+        if (Math.random() < 0.3) {
+          requestHeaders['X-Forwarded-For'] = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+        }
+        
+        const response = await Promise.race([
+          fetch(provider.url, {
+            method: 'POST',
+            headers: requestHeaders,
+            body: dnsQuery
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), RACE_TIMEOUT))
+        ]);
+        
+        const responseTime = Date.now() - startTime;
+        
+        if (!response.ok) {
+          updateProviderMetrics(provider, false, responseTime);
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const responseData = await response.arrayBuffer();
+        
+        if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
+          updateProviderMetrics(provider, false, responseTime);
+          throw new Error('Response too large');
+        }
+        
+        updateProviderMetrics(provider, true, responseTime);
+        
+        if (!resolved) {
+          resolved = true;
+          resolve({
+            data: responseData,
+            provider: provider.url,
+            responseTime: responseTime
+          });
+        }
+        
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
         updateProviderMetrics(provider, false, responseTime);
-        throw new Error(`HTTP ${response.status}`);
+        errorCount++;
+        if (errorCount >= selectedProviders.length && !resolved) {
+          reject(new Error('All providers failed'));
+        }
       }
-      
-      const responseData = await response.arrayBuffer();
-      
-      if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
-        updateProviderMetrics(provider, false, responseTime);
-        throw new Error('Response too large');
-      }
-      
-      updateProviderMetrics(provider, true, responseTime);
-      
-      return {
-        data: responseData,
-        provider: provider.url,
-        responseTime: responseTime
-      };
-      
-    } catch (error) {
-      clearTimeout(timeoutId);
-      const responseTime = Date.now() - startTime;
-      updateProviderMetrics(provider, false, responseTime);
-      throw error;
-    }
+    });
   });
-  
-  return Promise.any(racePromises);
 }
 
 async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = []) {
@@ -364,22 +375,21 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
   
   for (const provider of availableProviders) {
     const startTime = Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT);
     
     try {
-      const response = await fetch(provider.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/dns-message',
-          'Accept': 'application/dns-message',
-          'User-Agent': getRandomUserAgent()
-        },
-        body: dnsQuery,
-        signal: controller.signal
-      });
+      const response = await Promise.race([
+        fetch(provider.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/dns-message',
+            'Accept': 'application/dns-message',
+            'User-Agent': getRandomUserAgent()
+          },
+          body: dnsQuery
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), FALLBACK_TIMEOUT))
+      ]);
       
-      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
@@ -394,7 +404,6 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [])
       
       updateProviderMetrics(provider, false, responseTime);
     } catch (error) {
-      clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
       updateProviderMetrics(provider, false, responseTime);
     }
@@ -519,6 +528,15 @@ async function sendDecoyRequests() {
   } catch (e) {}
 }
 
+function base64ToArrayBuffer(base64) {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 async function handleDNSQuery(request) {
   const url = new URL(request.url);
   const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -545,7 +563,7 @@ async function handleDNSQuery(request) {
     try {
       const paddedDns = dnsParam.replace(/-/g, '+').replace(/_/g, '/');
       const padding = '='.repeat((4 - (paddedDns.length % 4)) % 4);
-      dnsQuery = Uint8Array.from(atob(paddedDns + padding), c => c.charCodeAt(0)).buffer;
+      dnsQuery = base64ToArrayBuffer(paddedDns + padding);
     } catch (e) {
       return new Response('Invalid dns parameter', { status: 400 });
     }
@@ -622,9 +640,9 @@ function generateAppleProfile(requestUrl) {
   const baseUrl = new URL(requestUrl);
   const dohUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const hostname = baseUrl.hostname;
-  const uuid1 = crypto.randomUUID();
-  const uuid2 = crypto.randomUUID();
-  const uuid3 = crypto.randomUUID();
+  const uuid1 = generateUUID();
+  const uuid2 = generateUUID();
+  const uuid3 = generateUUID();
 
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1552,7 +1570,7 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   
   if (url.pathname === '/dns-query') {
-    return handleDNSQuery(request);
+    return await handleDNSQuery(request);
   } else if (url.pathname === '/apple') {
     return generateAppleProfile(request.url);
   } else if (url.pathname === '/health') {
@@ -1570,8 +1588,7 @@ export async function onRequest(context) {
         avgResponseTime: Math.round(avgResponseTime)
       },
       cache: {
-        entries: dnsCache.size,
-        hitRate: 'N/A'
+        entries: dnsCache.size
       },
       requests: {
         concurrent: concurrentRequests,
@@ -1582,6 +1599,6 @@ export async function onRequest(context) {
       headers: { 'Content-Type': 'application/json' }
     });
   } else {
-    return handleRootRequest(request);
+    return await handleRootRequest(request);
   }
 }
