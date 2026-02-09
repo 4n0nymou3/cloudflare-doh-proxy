@@ -1299,7 +1299,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚙️</div>
-                <div class="feature-text">استفاده از 63 سرور DNS معتبر جهانی</div>
+                <div class="feature-text">استفاده از بیش از 200 سرور DNS معتبر جهانی</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🚦</div>
@@ -1333,7 +1333,7 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
 
         <h2>🌐 DNS Providers استفاده شده:</h2>
         <div class="dns-list">
-            <div class="dns-item">63 سرور DNS معتبر از کشورهای مختلف</div>
+            <div class="dns-item">بیش از 200 سرور DNS معتبر از کشورهای مختلف</div>
             <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
             <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
             <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
