@@ -1,67 +1,319 @@
 const UPSTREAM_DNS_PROVIDERS = [
+  // ========== Tier 1: Most Popular & Reliable (Cloudflare, Google, Quad9) ==========
   { url: 'https://cloudflare-dns.com/dns-query', priority: 1, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.cloudflare.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
   { url: 'https://1.1.1.1/dns-query', priority: 2, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'one.one.one.one', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
   { url: 'https://1.0.0.1/dns-query', priority: 3, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'one.one.one.one', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
   { url: 'https://mozilla.cloudflare-dns.com/dns-query', priority: 4, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'mozilla.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
   { url: 'https://security.cloudflare-dns.com/dns-query', priority: 5, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'security.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
   { url: 'https://family.cloudflare-dns.com/dns-query', priority: 6, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.google/dns-query', priority: 7, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.google.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.quad9.net/dns-query', priority: 8, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns9.quad9.net/dns-query', priority: 9, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns9.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns10.quad9.net/dns-query', priority: 10, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns10.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.opendns.com/dns-query', priority: 11, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.opendns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.nextdns.io/dns-query', priority: 12, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.nextdns.io', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://sky.rethinkdns.com/dns-query', priority: 13, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'sky.rethinkdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.adguard-dns.com/dns-query', priority: 14, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://unfiltered.adguard-dns.com/dns-query', priority: 15, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'unfiltered.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://family.adguard-dns.com/dns-query', priority: 16, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://brave.cloudflare-dns.com/dns-query', priority: 17, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'brave.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.mullvad.net/dns-query', priority: 18, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://adblock.doh.mullvad.net/dns-query', priority: 19, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adblock.doh.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://base.dns.mullvad.net/dns-query', priority: 20, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'base.dns.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://freedns.controld.com/p0', priority: 21, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://freedns.controld.com/p2', priority: 22, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.cleanbrowsing.org/doh/security-filter/', priority: 23, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.cleanbrowsing.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.familyshield.opendns.com/dns-query', priority: 24, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.familyshield.opendns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns64.dns.google/dns-query', priority: 25, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns64.dns.google', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.switch.ch/dns-query', priority: 26, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.switch.ch', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.digitale-gesellschaft.ch/dns-query', priority: 27, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.digitale-gesellschaft.ch', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.wikimedia.org/dns-query', priority: 28, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.wikimedia.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.libredns.gr/dns-query', priority: 29, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.libredns.gr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://private.canadianshield.cira.ca/dns-query', priority: 30, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'private.canadianshield.cira.ca', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://protected.canadianshield.cira.ca/dns-query', priority: 31, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'protected.canadianshield.cira.ca', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.centraleu.pi-dns.com/dns-query', priority: 32, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.centraleu.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.westus.pi-dns.com/dns-query', priority: 33, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.westus.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.eastus.pi-dns.com/dns-query', priority: 34, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.eastus.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.aa.net.uk/dns-query', priority: 35, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.aa.net.uk', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.ffmuc.net/dns-query', priority: 36, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.ffmuc.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.applied-privacy.net/query', priority: 37, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.applied-privacy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.dns.sb/dns-query', priority: 38, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.dns.sb', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.pub/dns-query', priority: 39, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.pub', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.alidns.com/dns-query', priority: 40, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.alidns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.360.cn/dns-query', priority: 41, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.360.cn', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.twnic.tw/dns-query', priority: 42, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.twnic.tw', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://ordns.he.net/dns-query', priority: 43, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ordns.he.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.cfiec.net/dns-query', priority: 44, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cfiec.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.brahma.world/dns-query', priority: 45, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.brahma.world', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.dnshome.de/dns-query', priority: 46, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnshome.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh-fi.blahdns.com/dns-query', priority: 47, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-fi.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh-jp.blahdns.com/dns-query', priority: 48, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-jp.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh-de.blahdns.com/dns-query', priority: 49, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-de.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh-sg.blahdns.com/dns-query', priority: 50, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-sg.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.tiar.app/dns-query', priority: 51, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiar.app', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.tiarap.org/dns-query', priority: 52, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiarap.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://jp.tiar.app/dns-query', priority: 53, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiar.app', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://jp.tiarap.org/dns-query', priority: 54, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiarap.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.containerpi.com/dns-query', priority: 55, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.containerpi.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.rubyfish.cn/dns-query', priority: 56, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.rubyfish.cn', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.armadillodns.net/dns-query', priority: 57, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.armadillodns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://commons.host/dns-query', priority: 58, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'commons.host', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.crypto.sx/dns-query', priority: 59, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.crypto.sx', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.dnswarden.com/uncensored', priority: 60, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnswarden.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://resolver-eu.lelux.fi/dns-query', priority: 61, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver-eu.lelux.fi', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://doh.bortzmeyer.fr/dns-query', priority: 62, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.bortzmeyer.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
-  { url: 'https://dns.oszx.co/dns-query', priority: 63, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.oszx.co', avgResponseTime: 0, successCount: 0, totalRequests: 0 }
+  { url: 'https://dns64.cloudflare-dns.com/dns-query', priority: 7, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns64.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://brave.cloudflare-dns.com/dns-query', priority: 8, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'brave.cloudflare-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.google/dns-query', priority: 9, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.google.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://8888.google/dns-query', priority: 10, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.google.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns64.dns.google/dns-query', priority: 11, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns64.dns.google', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.quad9.net/dns-query', priority: 12, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns9.quad9.net/dns-query', priority: 13, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns9.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns10.quad9.net/dns-query', priority: 14, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns10.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns11.quad9.net/dns-query', priority: 15, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns11.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns12.quad9.net/dns-query', priority: 16, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns12.quad9.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 2: Well-Known Providers (NextDNS, OpenDNS, AdGuard) ==========
+  { url: 'https://dns.nextdns.io/dns-query', priority: 17, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.nextdns.io', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.opendns.com/dns-query', priority: 18, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'www.opendns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.familyshield.opendns.com/dns-query', priority: 19, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.familyshield.opendns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.umbrella.com/dns-query', priority: 20, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.umbrella.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.adguard-dns.com/dns-query', priority: 21, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://unfiltered.adguard-dns.com/dns-query', priority: 22, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'unfiltered.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://family.adguard-dns.com/dns-query', priority: 23, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.adguard-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 3: Privacy-Focused Providers (Mullvad, Control D, RethinkDNS) ==========
+  { url: 'https://doh.mullvad.net/dns-query', priority: 24, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://adblock.doh.mullvad.net/dns-query', priority: 25, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adblock.doh.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://base.dns.mullvad.net/dns-query', priority: 26, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'base.dns.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://extended.dns.mullvad.net/dns-query', priority: 27, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'extended.dns.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://all.dns.mullvad.net/dns-query', priority: 28, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'all.dns.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://family.dns.mullvad.net/dns-query', priority: 29, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.dns.mullvad.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/p0', priority: 30, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/p1', priority: 31, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/p2', priority: 32, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/p3', priority: 33, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/family', priority: 34, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://freedns.controld.com/uncensored', priority: 35, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedns.controld.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://sky.rethinkdns.com/dns-query', priority: 36, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'sky.rethinkdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 4: Security & Filtering Providers (CleanBrowsing, DNS0) ==========
+  { url: 'https://doh.cleanbrowsing.org/doh/security-filter/', priority: 37, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.cleanbrowsing.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.cleanbrowsing.org/doh/adult-filter/', priority: 38, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.cleanbrowsing.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.cleanbrowsing.org/doh/family-filter/', priority: 39, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.cleanbrowsing.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://zero.dns0.eu/dns-query', priority: 40, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'zero.dns0.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://kids.dns0.eu/dns-query', priority: 41, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'kids.dns0.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 5: Regional/Government Providers (CIRA, DNS4EU, Wikimedia) ==========
+  { url: 'https://private.canadianshield.cira.ca/dns-query', priority: 42, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'private.canadianshield.cira.ca', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://protected.canadianshield.cira.ca/dns-query', priority: 43, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'protected.canadianshield.cira.ca', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://family.canadianshield.cira.ca/dns-query', priority: 44, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.canadianshield.cira.ca', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://protective.joindns4.eu/dns-query', priority: 45, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'protective.joindns4.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://child.joindns4.eu/dns-query', priority: 46, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'child.joindns4.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://noads.joindns4.eu/dns-query', priority: 47, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'noads.joindns4.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://child-noads.joindns4.eu/dns-query', priority: 48, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'child-noads.joindns4.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://unfiltered.joindns4.eu/dns-query', priority: 49, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'unfiltered.joindns4.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://wikimedia-dns.org/dns-query', priority: 50, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'wikimedia-dns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.wikimedia.org/dns-query', priority: 51, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.wikimedia.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 6: European Privacy Providers (Switch, Digitale Gesellschaft, LibreDNS) ==========
+  { url: 'https://dns.switch.ch/dns-query', priority: 52, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.switch.ch', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.digitale-gesellschaft.ch/dns-query', priority: 53, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.digitale-gesellschaft.ch', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.libredns.gr/dns-query', priority: 54, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.libredns.gr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.libredns.gr/noads', priority: 55, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.libredns.gr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://odvr.nic.cz/dns-query', priority: 56, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'odvr.nic.cz', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.ffmuc.net/dns-query', priority: 57, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.ffmuc.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.applied-privacy.net/query', priority: 58, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.applied-privacy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.aa.net.uk/dns-query', priority: 59, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.aa.net.uk', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 7: Asian/Pacific Providers (AliDNS, TWNIC, DNSPod) ==========
+  { url: 'https://dns.alidns.com/dns-query', priority: 60, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.alidns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.twnic.tw/dns-query', priority: 61, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.twnic.tw', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.pub/dns-query', priority: 62, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.pub', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.360.cn/dns-query', priority: 63, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.360.cn', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://public.dns.iij.jp/dns-query', priority: 64, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'public.dns.iij.jp', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 8: Additional Quality Providers ==========
+  { url: 'https://doh.dns.sb/dns-query', priority: 65, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.dns.sb', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.pub/dns-query', priority: 66, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.pub', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ordns.he.net/dns-query', priority: 67, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ordns.he.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.brahma.world/dns-query', priority: 68, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.brahma.world', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.cfiec.net/dns-query', priority: 69, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cfiec.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.dnshome.de/dns-query', priority: 70, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnshome.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dnsforge.de/dns-query', priority: 71, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dnsforge.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://clean.dnsforge.de/dns-query', priority: 72, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'clean.dnsforge.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://hard.dnsforge.de/dns-query', priority: 73, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'hard.dnsforge.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 9: BlahDNS Servers (Multiple Locations) ==========
+  { url: 'https://doh-fi.blahdns.com/dns-query', priority: 74, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-fi.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh-jp.blahdns.com/dns-query', priority: 75, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-jp.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh-de.blahdns.com/dns-query', priority: 76, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-de.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh-sg.blahdns.com/dns-query', priority: 77, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-sg.blahdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 10: Pi-DNS Servers (Multiple Locations) ==========
+  { url: 'https://doh.centraleu.pi-dns.com/dns-query', priority: 78, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.centraleu.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.westus.pi-dns.com/dns-query', priority: 79, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.westus.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.eastus.pi-dns.com/dns-query', priority: 80, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.eastus.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.northeu.pi-dns.com/dns-query', priority: 81, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.northeu.pi-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 11: Tiarap Servers ==========
+  { url: 'https://doh.tiar.app/dns-query', priority: 82, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiar.app', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.tiarap.org/dns-query', priority: 83, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.tiarap.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://jp.tiar.app/dns-query', priority: 84, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiar.app', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://jp.tiarap.org/dns-query', priority: 85, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jp.tiarap.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 12: Additional Reliable Providers ==========
+  { url: 'https://dns.containerpi.com/dns-query', priority: 86, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.containerpi.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.rubyfish.cn/dns-query', priority: 87, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.rubyfish.cn', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.armadillodns.net/dns-query', priority: 88, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.armadillodns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://commons.host/dns-query', priority: 89, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'commons.host', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.crypto.sx/dns-query', priority: 90, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.crypto.sx', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.dnswarden.com/uncensored', priority: 91, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dnswarden.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://resolver-eu.lelux.fi/dns-query', priority: 92, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver-eu.lelux.fi', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.bortzmeyer.fr/dns-query', priority: 93, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.bortzmeyer.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.oszx.co/dns-query', priority: 94, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.oszx.co', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 13: OpenBLD & Specialized Providers ==========
+  { url: 'https://ada.openbld.net/dns-query', priority: 95, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ada.openbld.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ric.openbld.net/dns-query', priority: 96, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ric.openbld.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://luna.openbld.net/dns-query', priority: 97, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'luna.openbld.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 14: DNScry.pt Global Network ==========
+  { url: 'https://fra01.dnscry.pt/dns-query', priority: 98, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'fra01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://lon01.dnscry.pt/dns-query', priority: 99, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'lon01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://nyc01.dnscry.pt/dns-query', priority: 100, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'nyc01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://par01.dnscry.pt/dns-query', priority: 101, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'par01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ams01.dnscry.pt/dns-query', priority: 102, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ams01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://sin01.dnscry.pt/dns-query', priority: 103, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'sin01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://syd01.dnscry.pt/dns-query', priority: 104, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'syd01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://tok01.dnscry.pt/dns-query', priority: 105, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'tok01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://sea01.dnscry.pt/dns-query', priority: 106, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'sea01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://lax01.dnscry.pt/dns-query', priority: 107, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'lax01.dnscry.pt', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 15: UncensoredDNS & Njalla ==========
+  { url: 'https://anycast.uncensoreddns.org/dns-query', priority: 108, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'anycast.uncensoreddns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://unicast.uncensoreddns.org/dns-query', priority: 109, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'unicast.uncensoreddns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.njal.la/dns-query', priority: 110, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.njal.la', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 16: MyDNS Network Variants ==========
+  { url: 'https://freedom.mydns.network/dns-query', priority: 111, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'freedom.mydns.network', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://paranoia.mydns.network/dns-query', priority: 112, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'paranoia.mydns.network', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://adblock.mydns.network/dns-query', priority: 113, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adblock.mydns.network', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://family.mydns.network/dns-query', priority: 114, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.mydns.network', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 17: Comss.one DNS ==========
+  { url: 'https://dns.comss.one/dns-query', priority: 115, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.comss.one', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://router.comss.one/dns-query', priority: 116, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'router.comss.one', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 18: DNS4me Global Network ==========
+  { url: 'https://ca01.dns4me.net', priority: 117, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ca01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ca02.dns4me.net', priority: 118, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ca02.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://us01.dns4me.net', priority: 119, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'us01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://us02.dns4me.net', priority: 120, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'us02.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://uk01.dns4me.net', priority: 121, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'uk01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://au01.dns4me.net', priority: 122, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'au01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://sg01.dns4me.net', priority: 123, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'sg01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://de01.dns4me.net', priority: 124, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'de01.dns4me.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 19: Restena & SafeServe ==========
+  { url: 'https://dnspub.restena.lu/dns-query', priority: 125, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dnspub.restena.lu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://safeservedns.com/dns-query', priority: 126, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'safeservedns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 20: Rabbit DNS Variants ==========
+  { url: 'https://dns.rabbitdns.org/dns-query', priority: 127, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.rabbitdns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://security.rabbitdns.org/dns-query', priority: 128, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'security.rabbitdns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://family.rabbitdns.org/dns-query', priority: 129, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'family.rabbitdns.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 21: V.recipes Variants ==========
+  { url: 'https://v.recipes/dns-query', priority: 130, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'v.recipes', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://v.recipes/dns-adblock', priority: 131, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'v.recipes', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://v.recipes/dns-ecs', priority: 132, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'v.recipes', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 22: Surfshark & Blokada ==========
+  { url: 'https://dns.surfsharkdns.com/dns-query', priority: 133, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.surfsharkdns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.blokada.org/dns-query', priority: 134, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.blokada.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 23: HaGeZi DNS (Germany/Finland) ==========
+  { url: 'https://root.hagezi.org/dns-query', priority: 135, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'root.hagezi.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://wurzn.hagezi.org/dns-query', priority: 136, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'wurzn.hagezi.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://juuri.hagezi.org/dns-query', priority: 137, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'juuri.hagezi.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 24: LavaDNS & DNS.SB ==========
+  { url: 'https://eu1.dns.lavate.ch/dns-query', priority: 138, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'eu1.dns.lavate.ch', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.seby.io/dns-query', priority: 139, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.seby.io', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 25: Absolight DNS ==========
+  { url: 'https://resolver1.absolight.net/dns-query', priority: 140, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver1.absolight.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://resolver2.absolight.net/dns-query', priority: 141, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver2.absolight.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 26: AdFilter (Australia) ==========
+  { url: 'https://per.adfilter.net/dns-query', priority: 142, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'per.adfilter.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://syd.adfilter.net/dns-query', priority: 143, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'syd.adfilter.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://adl.adfilter.net/dns-query', priority: 144, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adl.adfilter.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 27: FDN (French Data Network) ==========
+  { url: 'https://ns0.fdn.fr/dns-query', priority: 145, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns0.fdn.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ns1.fdn.fr/dns-query', priority: 146, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns1.fdn.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 28: Technitium & Telekom ==========
+  { url: 'https://dns.technitium.com/dns-query', priority: 147, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.technitium.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.telekom.de/dns-query', priority: 148, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.telekom.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 29: Aquilenet & La Contre-Voie ==========
+  { url: 'https://dns.aquilenet.fr/dns-query', priority: 149, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.aquilenet.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.lacontrevoie.fr/dns-query', priority: 150, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.lacontrevoie.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 30: Belnet & In-Berlin ==========
+  { url: 'https://dns.belnet.be/dns-query', priority: 151, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.belnet.be', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns1.in-berlin.de/dns-query', priority: 152, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns1.in-berlin.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns2.in-berlin.de/dns-query', priority: 153, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns2.in-berlin.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 31: UK DNS Privacy & Sunet ==========
+  { url: 'https://resolver.dnsprivacy.org.uk/dns-query', priority: 154, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver.dnsprivacy.org.uk', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://resolver.sunet.se/dns-query', priority: 155, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'resolver.sunet.se', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 32: OpenNameServer & Froth.zone ==========
+  { url: 'https://ns1.opennameserver.org/dns-query', priority: 156, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns1.opennameserver.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.froth.zone/dns-query', priority: 157, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.froth.zone', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 33: StormyCloud & Usable Privacy ==========
+  { url: 'https://dns.stormycloud.org/dns-query', priority: 158, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.stormycloud.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://adfree.usableprivacy.net/dns-query', priority: 159, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adfree.usableprivacy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 34: DNS4All & SmartGuard ==========
+  { url: 'https://doh.dns4all.eu/dns-query', priority: 160, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.dns4all.eu', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.smartguard.io/dns-query', priority: 161, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.smartguard.io', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 35: PlumeDNS & Bitdefender ==========
+  { url: 'https://privacy.plumedns.com/dns-query', priority: 162, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'privacy.plumedns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.bitdefender.net/dns-query', priority: 163, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.bitdefender.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 36: CCTLD.KG & NIC.LV ==========
+  { url: 'https://dns.cctld.kg/dns-query', priority: 164, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cctld.kg', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.lv/dns-query', priority: 165, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.lv', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.nic.lv/dns-query', priority: 166, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.nic.lv', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 37: DNS over Tor ==========
+  { url: 'https://japan.dnsovertor.cc/dns-query', priority: 167, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'japan.dnsovertor.cc', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://chuncheon.dnsovertor.cc/dns-query', priority: 168, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'chuncheon.dnsovertor.cc', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://seoul.dnsovertor.cc/dns-query', priority: 169, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'seoul.dnsovertor.cc', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 38: CERT Estonia & Hafnova ==========
+  { url: 'https://dns.cert.ee/dns-query', priority: 170, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cert.ee', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://secure.hafnova.com/dns-query', priority: 171, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'secure.hafnova.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 39: Gamban & Guardio ==========
+  { url: 'https://dns.gamban.com/dns-query', priority: 172, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.gamban.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.guard.io/dns-query', priority: 173, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.guard.io', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 40: Blue Shield Umbrella ==========
+  { url: 'https://rfree1.blue-shield.at/dns-query', priority: 174, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'rfree1.blue-shield.at', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://rfree2.blue-shield.at/dns-query', priority: 175, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'rfree2.blue-shield.at', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 41: DynX DNS ==========
+  { url: 'https://dns.dynx.pro/dns-query', priority: 176, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dynx.pro', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.dynx.pro/dns-query/family', priority: 177, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dynx.pro', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 42: Arashi DNS & DNS.digitalsize ==========
+  { url: 'https://arashi.net.eu.org/dns-query', priority: 178, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'arashi.net.eu.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ns.net.kg/dns-query', priority: 179, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns.net.kg', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.digitalsize.net/dns-query', priority: 180, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.digitalsize.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 43: Charter Spectrum ==========
+  { url: 'https://doh-01.spectrum.com/dns-query', priority: 181, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-01.spectrum.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh-02.spectrum.com/dns-query', priority: 182, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh-02.spectrum.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 44: QWER DNS ==========
+  { url: 'https://dog.dns.qwer.pw/dns-query', priority: 183, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dog.dns.qwer.pw', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://lion.dns.qwer.pw/dns-query', priority: 184, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'lion.dns.qwer.pw', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://frog.dns.qwer.pw/dns-query', priority: 185, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'frog.dns.qwer.pw', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 45: Foxyfy DNS (Multi-region) ==========
+  { url: 'https://dns.foxyfy.net/dns-query', priority: 186, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.foxyfy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://de-f1.foxyfy.net/dns-query', priority: 187, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'de-f1.foxyfy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://es-ma.foxyfy.net/dns-query', priority: 188, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'es-ma.foxyfy.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 46: Plan9 DNS ==========
+  { url: 'https://kronos.plan9-dns.com/dns-query', priority: 189, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'kronos.plan9-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://helios.plan9-dns.com/dns-query', priority: 190, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'helios.plan9-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://pluton.plan9-dns.com/dns-query', priority: 191, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'pluton.plan9-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 47: DNSlow & DNSdoh.art ==========
+  { url: 'https://dnslow.me/dns-query', priority: 192, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dnslow.me', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dnsdoh.art/dns-query', priority: 193, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dnsdoh.art', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 48: AKBXR & Adfreedns ==========
+  { url: 'https://dns.akbxr.com/dns-query', priority: 194, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.akbxr.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://adfreedns.top/dns-query', priority: 195, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'adfreedns.top', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 49: W3C TAG & CSS Working Group ==========
+  { url: 'https://dns.w3ctag.org/dns-query', priority: 196, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.w3ctag.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.csswg.org/dns-query', priority: 197, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.csswg.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 50: Yarp & SZ DNS ==========
+  { url: 'https://yarp.lefolgoc.net/dns-query', priority: 198, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'yarp.lefolgoc.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.sz-dns.com/dns-query', priority: 199, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.sz-dns.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 51: Marbled Fennec & Pubhole ==========
+  { url: 'https://dns.marbledfennec.net/dns-query', priority: 200, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.marbledfennec.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.archuser.org/dns-query', priority: 201, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.archuser.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+
+  // ========== Tier 52: Additional Community/Regional Providers ==========
+  { url: 'https://dns.kescher.at/dns-query', priority: 202, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.kescher.at', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ibuki.cgnat.net/dns-query', priority: 203, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ibuki.cgnat.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.li/dns-query', priority: 204, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.li', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns4eu.online/dns-query', priority: 205, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns4eu.online', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.elemental.software/dns-query', priority: 206, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.elemental.software', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doth.huque.com/dns-query', priority: 207, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doth.huque.com', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://zdn.ro/dns-query', priority: 208, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'zdn.ro', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://doh.zknt.org/dns-query', priority: 209, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.zknt.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://ns2.4netguides.org/dns-query', priority: 210, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns2.4netguides.org', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dukun.de/dns-query', priority: 211, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dukun.de', avgResponseTime: 0, successCount: 0, totalRequests: 0 },
+  { url: 'https://dns.cynthialabs.net/dns-query', priority: 212, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cynthialabs.net', avgResponseTime: 0, successCount: 0, totalRequests: 0 }
 ];
 
 const DNS_CACHE_TTL_MIN = 60;
