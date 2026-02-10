@@ -1515,11 +1515,11 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
   "log": {
     "access": "",
     "error": "",
-    "loglevel": "none",
-    "dnsLog": false
+    "loglevel": "warning",
+    "dnsLog": true
   },
   "dns": {
-    "tag": "dns",
+    "tag": "dns-in",
     "hosts": {
       "${workerHost}": [
         "172.67.73.38",
@@ -1531,67 +1531,62 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
         "104.16.249.249",
         "104.26.13.8"
       ],
-      "domain:youtube.com": [
-        "google.com"
+      "cloudflare-dns.com": [
+        "1.1.1.1",
+        "1.0.0.1"
       ]
     },
     "servers": [
-      "${workerUrl}"
-    ]
+      "${workerUrl}",
+      "1.1.1.1",
+      "8.8.8.8"
+    ],
+    "queryStrategy": "UseIPv4"
   },
   "inbounds": [
     {
-      "domainOverride": [
-        "http",
-        "tls"
-      ],
-      "protocol": "socks",
       "tag": "socks-in",
-      "listen": "127.0.0.1",
       "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ],
+        "routeOnly": true
+      },
       "settings": {
         "auth": "noauth",
         "udp": true,
         "userLevel": 8
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls"
-        ]
       }
     },
     {
-      "protocol": "http",
       "tag": "http-in",
-      "listen": "127.0.0.1",
       "port": 10809,
-      "settings": {
-        "userLevel": 8
-      },
+      "listen": "127.0.0.1",
+      "protocol": "http",
       "sniffing": {
         "enabled": true,
         "destOverride": [
           "http",
           "tls"
-        ]
+        ],
+        "routeOnly": true
+      },
+      "settings": {
+        "userLevel": 8
       }
     }
   ],
   "outbounds": [
     {
-      "protocol": "freedom",
       "tag": "fragment-out",
-      "domainStrategy": "UseIP",
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls"
-        ]
-      },
+      "protocol": "freedom",
       "settings": {
+        "domainStrategy": "UseIP",
         "fragment": {
           "packets": "tlshello",
           "length": "10-20",
@@ -1608,57 +1603,12 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
       }
     },
     {
-      "protocol": "dns",
-      "tag": "dns-out"
+      "tag": "dns-out",
+      "protocol": "dns"
     },
     {
-      "protocol": "vless",
-      "tag": "fakeproxy-out",
-      "domainStrategy": "",
-      "settings": {
-        "vnext": [
-          {
-            "address": "google.com",
-            "port": 443,
-            "users": [
-              {
-                "encryption": "none",
-                "flow": "",
-                "id": "UUID",
-                "level": 8,
-                "security": "auto"
-              }
-            ]
-          }
-        ]
-      },
-      "streamSettings": {
-        "network": "ws",
-        "security": "tls",
-        "tlsSettings": {
-          "allowInsecure": false,
-          "alpn": [
-            "h2",
-            "http/1.1"
-          ],
-          "fingerprint": "randomized",
-          "publicKey": "",
-          "serverName": "google.com",
-          "shortId": "",
-          "show": false,
-          "spiderX": ""
-        },
-        "wsSettings": {
-          "headers": {
-            "Host": "google.com"
-          },
-          "path": "/"
-        }
-      },
-      "mux": {
-        "concurrency": 8,
-        "enabled": false
-      }
+      "tag": "block",
+      "protocol": "blackhole"
     }
   ],
   "policy": {
@@ -1679,27 +1629,25 @@ function generateHTML(workerUrl, workerHost, appleProfileUrl) {
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "inboundTag": [
-          "socks-in",
-          "http-in"
-        ],
         "type": "field",
-        "port": "53",
-        "outboundTag": "dns-out",
-        "enabled": true
+        "outboundTag": "block",
+        "ip": [
+          "geoip:private",
+          "geoip:cn"
+        ]
       },
       {
-        "inboundTag": [
-          "socks-in",
-          "http-in"
-        ],
         "type": "field",
-        "port": "0-65535",
+        "outboundTag": "dns-out",
+        "port": "53",
+        "network": "udp"
+      },
+      {
+        "type": "field",
         "outboundTag": "fragment-out",
-        "enabled": true
+        "port": "0-65535"
       }
-    ],
-    "strategy": "rules"
+    ]
   },
   "stats": {}
 }</div>
