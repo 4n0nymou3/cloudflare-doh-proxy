@@ -548,7 +548,11 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
         method: 'POST',
         headers: requestHeaders,
         body: processedQuery,
-        signal: controller.signal
+        signal: controller.signal,
+        cf: {
+          cacheTtl: DNS_CACHE_TTL_DEFAULT,
+          cacheEverything: true
+        }
       });
       
       clearTimeout(timeoutId);
