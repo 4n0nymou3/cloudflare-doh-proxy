@@ -922,8 +922,10 @@ function generateAppleProfile(requestUrl) {
   const baseUrl = new URL(requestUrl);
   const dohUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const hostname = baseUrl.hostname;
+  
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
+  const uuid3 = crypto.randomUUID();
 
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -957,7 +959,7 @@ function generateAppleProfile(requestUrl) {
     </array>
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
-
+    
 Designed by: Anonymous</string>
     <key>PayloadDisplayName</key>
     <string>Anonymous DoH Proxy - ${hostname}</string>
@@ -973,7 +975,6 @@ Designed by: Anonymous</string>
     <integer>1</integer>
 </dict>
 </plist>`;
-
   return mobileconfig;
 }
 
