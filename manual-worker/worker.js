@@ -180,7 +180,22 @@ const UPSTREAM_DNS_PROVIDERS = [
   { url: 'https://doh.zknt.org/dns-query', priority: 209, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.zknt.org', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
   { url: 'https://ns2.4netguides.org/dns-query', priority: 210, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'ns2.4netguides.org', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
   { url: 'https://dukun.de/dns-query', priority: 211, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dukun.de', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
-  { url: 'https://dns.cynthialabs.net/dns-query', priority: 212, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cynthialabs.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 }
+  { url: 'https://dns.cynthialabs.net/dns-query', priority: 212, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.cynthialabs.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.la.ahadns.net/dns-query', priority: 213, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.la.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'na', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.ny.ahadns.net/dns-query', priority: 214, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.ny.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'na', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.nl.ahadns.net/dns-query', priority: 215, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.nl.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.pl.ahadns.net/dns-query', priority: 216, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.pl.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.in.ahadns.net/dns-query', priority: 217, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.in.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'asia', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.sg.ahadns.net/dns-query', priority: 218, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.sg.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'asia', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.au.ahadns.net/dns-query', priority: 219, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.au.ahadns.net', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'oceania', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://dnslow.me/dns-query', priority: 220, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dnslow.me', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://dns.dns-over-https.com/dns-query', priority: 221, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.dns-over-https.com', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.nic.fr/dns-query', priority: 222, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.nic.fr', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://dns.decloudus.com/dns-query', priority: 223, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.decloudus.com', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://dns.flatuslifir.is/dns-query', priority: 224, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.flatuslifir.is', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://dns.paesa.es/dns-query', priority: 225, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'dns.paesa.es', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'eu', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://jcdns.pikapods.com/dns-query', priority: 226, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'jcdns.pikapods.com', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'global', circuitState: 'closed', lastCircuitOpen: 0 },
+  { url: 'https://doh.360.cn/dns-query', priority: 227, healthScore: 100, lastCheck: 0, consecutiveFailures: 0, fronting: 'doh.360.cn', avgResponseTime: 0, successCount: 0, totalRequests: 0, region: 'asia', circuitState: 'closed', lastCircuitOpen: 0 }
 ];
 
 const DNS_CACHE_TTL_MIN = 60;
@@ -190,7 +205,7 @@ const PARALLEL_RACING_COUNT = 10;
 const RACE_TIMEOUT = 4000;
 const FALLBACK_TIMEOUT = 3000;
 const MAX_DNS_RESPONSE_SIZE = 4096;
-const MAX_DNS_REQUEST_SIZE = 512;
+const MAX_DNS_REQUEST_SIZE = 1024;
 const HEALTH_CHECK_INTERVAL = 90000;
 const ADAPTIVE_LEARNING_INTERVAL = 180000;
 const RATE_LIMIT_REQUESTS = 200;
@@ -244,6 +259,13 @@ const ADDITIONAL_HEADERS = [
   { 'X-Client-Version': () => `DoH/${Math.floor(Math.random() * 10) + 1}.${Math.floor(Math.random() * 10)}` },
   { 'Accept-Language': () => ['en-US,en;q=0.9', 'en-GB,en;q=0.9', 'en;q=0.8'][Math.floor(Math.random() * 3)] },
   { 'Sec-CH-UA': () => `"Chromium";v="${120 + Math.floor(Math.random() * 10)}", "Google Chrome";v="${120 + Math.floor(Math.random() * 10)}"` }
+];
+
+const DECOY_DOMAINS = [
+  'example.com', 'example.org', 'example.net', 'cloudflare.com', 'google.com',
+  'wikipedia.org', 'github.com', 'microsoft.com', 'apple.com', 'amazon.com',
+  'youtube.com', 'twitter.com', 'facebook.com', 'reddit.com', 'stackoverflow.com',
+  'mozilla.org', 'w3.org', 'ietf.org', 'rfc-editor.org', 'archive.org'
 ];
 
 function getRandomUserAgent() {
@@ -305,48 +327,48 @@ function calculateProviderScore(provider, clientRegion = 'global') {
   const speedWeight = 0.30;
   const reliabilityWeight = 0.20;
   const regionWeight = 0.15;
-  
+
   let healthScore = provider.healthScore;
   if (provider.consecutiveFailures > 0) {
     healthScore = Math.max(0, healthScore - (provider.consecutiveFailures * 12));
   }
-  
+
   let speedScore = 100;
   if (provider.avgResponseTime > 0) {
     speedScore = Math.max(0, 100 - (provider.avgResponseTime / 40));
   }
-  
+
   let reliabilityScore = 100;
   if (provider.totalRequests > 10) {
     const successRate = (provider.successCount / provider.totalRequests) * 100;
     reliabilityScore = successRate;
   }
-  
+
   let regionScore = 50;
   if (provider.region === clientRegion) {
     regionScore = 100;
   } else if (provider.region === 'global') {
     regionScore = 75;
   }
-  
+
   const freshnessPenalty = Math.min(15, timeSinceLastCheck / 12000);
-  
-  const totalScore = (healthScore * healthWeight) + 
-                    (speedScore * speedWeight) + 
+
+  const totalScore = (healthScore * healthWeight) +
+                    (speedScore * speedWeight) +
                     (reliabilityScore * reliabilityWeight) +
                     (regionScore * regionWeight) -
                     freshnessPenalty;
-  
+
   return Math.max(0, Math.min(100, totalScore));
 }
 
 function selectBestProviders(count, clientRegion = 'global') {
-  const healthyProviders = UPSTREAM_DNS_PROVIDERS.filter(p => 
-    p.healthScore > 25 && 
+  const healthyProviders = UPSTREAM_DNS_PROVIDERS.filter(p =>
+    p.healthScore > 25 &&
     p.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD &&
     checkCircuitBreaker(p)
   );
-  
+
   if (healthyProviders.length === 0) {
     UPSTREAM_DNS_PROVIDERS.forEach(p => {
       p.healthScore = 100;
@@ -355,27 +377,27 @@ function selectBestProviders(count, clientRegion = 'global') {
     });
     return UPSTREAM_DNS_PROVIDERS.slice(0, count);
   }
-  
+
   const scoredProviders = healthyProviders.map(provider => ({
     provider,
     score: calculateProviderScore(provider, clientRegion)
   }));
-  
+
   scoredProviders.sort((a, b) => b.score - a.score);
-  
+
   const diversityPool = scoredProviders.slice(0, Math.min(25, scoredProviders.length));
   const randomIndex = Math.floor(Math.random() * Math.min(8, diversityPool.length));
   if (randomIndex > 0 && diversityPool[randomIndex]) {
     [diversityPool[0], diversityPool[randomIndex]] = [diversityPool[randomIndex], diversityPool[0]];
   }
-  
+
   return diversityPool.slice(0, count).map(item => item.provider);
 }
 
 function updateProviderMetrics(provider, success, responseTime) {
   provider.totalRequests++;
   provider.lastCheck = Date.now();
-  
+
   if (success) {
     provider.successCount++;
     provider.consecutiveFailures = 0;
@@ -383,7 +405,7 @@ function updateProviderMetrics(provider, success, responseTime) {
     if (provider.circuitState === 'half-open') {
       provider.circuitState = 'closed';
     }
-    
+
     if (provider.avgResponseTime === 0) {
       provider.avgResponseTime = responseTime;
     } else {
@@ -401,24 +423,24 @@ async function performAdaptiveLearning() {
     return;
   }
   lastAdaptiveLearning = now;
-  
+
   UPSTREAM_DNS_PROVIDERS.forEach(provider => {
     if (provider.totalRequests > 30) {
       const successRate = (provider.successCount / provider.totalRequests) * 100;
-      
+
       if (successRate < 40) {
         provider.healthScore = Math.max(15, provider.healthScore - 20);
       } else if (successRate > 97) {
         provider.healthScore = Math.min(100, provider.healthScore + 12);
       }
-      
+
       if (provider.avgResponseTime > 2500) {
         provider.healthScore = Math.max(25, provider.healthScore - 12);
       } else if (provider.avgResponseTime < 400) {
         provider.healthScore = Math.min(100, provider.healthScore + 8);
       }
     }
-    
+
     if (now - provider.lastCheck > 900000) {
       provider.healthScore = Math.max(40, provider.healthScore - 15);
     }
@@ -431,23 +453,23 @@ async function performHealthCheck() {
     return;
   }
   lastHealthCheck = now;
-  
+
   const testQuery = new Uint8Array([
     0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d,
     0x00, 0x00, 0x01, 0x00, 0x01
   ]);
-  
+
   const providersToCheck = UPSTREAM_DNS_PROVIDERS
     .filter(p => now - p.lastCheck > HEALTH_CHECK_INTERVAL)
     .slice(0, 12);
-  
+
   const healthCheckPromises = providersToCheck.map(async (provider) => {
     const startTime = Date.now();
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
-      
+
       const response = await fetch(provider.url, {
         method: 'POST',
         headers: {
@@ -458,10 +480,10 @@ async function performHealthCheck() {
         body: testQuery,
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         updateProviderMetrics(provider, true, responseTime);
       } else {
@@ -472,7 +494,7 @@ async function performHealthCheck() {
       updateProviderMetrics(provider, false, responseTime);
     }
   });
-  
+
   await Promise.allSettled(healthCheckPromises);
 }
 
@@ -483,40 +505,174 @@ function applyQnameMinimization(dnsQuery) {
 
 function applyDnsPadding(dnsQuery) {
   if (!DNS_PADDING_ENABLED) return dnsQuery;
-  const view = new Uint8Array(dnsQuery);
-  const paddingSize = Math.floor(Math.random() * 64) + 16;
-  const paddedQuery = new Uint8Array(view.length + paddingSize + 4);
-  paddedQuery.set(view);
-  const optRrStart = view.length;
-  paddedQuery[optRrStart] = 0x00;
-  paddedQuery[optRrStart + 1] = 0x00;
-  paddedQuery[optRrStart + 2] = 0x29;
-  paddedQuery[optRrStart + 3] = 0x10;
-  for (let i = 0; i < paddingSize; i++) {
-    paddedQuery[optRrStart + 4 + i] = Math.floor(Math.random() * 256);
+  try {
+    const view = new Uint8Array(dnsQuery);
+    if (view.length < 12) return dnsQuery;
+
+    const arcount = (view[10] << 8) | view[11];
+    if (arcount > 0) return dnsQuery;
+
+    const paddingDataSize = Math.floor(Math.random() * 60) + 16;
+    const rdlength = 4 + paddingDataSize;
+    const optRRSize = 11 + rdlength;
+    const optRR = new Uint8Array(optRRSize);
+
+    let i = 0;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x29;
+    optRR[i++] = 0x10;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x00;
+    optRR[i++] = (rdlength >> 8) & 0xFF;
+    optRR[i++] = rdlength & 0xFF;
+    optRR[i++] = 0x00;
+    optRR[i++] = 0x0C;
+    optRR[i++] = (paddingDataSize >> 8) & 0xFF;
+    optRR[i++] = paddingDataSize & 0xFF;
+
+    const result = new Uint8Array(view.length + optRR.length);
+    result.set(view);
+    result.set(optRR, view.length);
+    result[10] = 0x00;
+    result[11] = 0x01;
+
+    return result.buffer;
+  } catch (e) {
+    return dnsQuery;
   }
-  return paddedQuery.buffer;
 }
 
 function stripECS(dnsQuery) {
   if (!ECS_STRIPPING_ENABLED) return dnsQuery;
-  return dnsQuery;
+  try {
+    const view = new Uint8Array(dnsQuery);
+    if (view.length < 12) return dnsQuery;
+
+    const arcount = (view[10] << 8) | view[11];
+    if (arcount === 0) return dnsQuery;
+
+    let offset = 12;
+    const qdcount = (view[4] << 8) | view[5];
+
+    for (let i = 0; i < qdcount && offset < view.length; i++) {
+      while (offset < view.length) {
+        const len = view[offset];
+        if (len === 0) { offset++; break; }
+        if ((len & 0xC0) === 0xC0) { offset += 2; break; }
+        offset += len + 1;
+      }
+      offset += 4;
+    }
+
+    const ancount = (view[6] << 8) | view[7];
+    const nscount = (view[8] << 8) | view[9];
+    const skipSections = ancount + nscount;
+
+    for (let i = 0; i < skipSections && offset < view.length; i++) {
+      while (offset < view.length) {
+        const len = view[offset];
+        if (len === 0) { offset++; break; }
+        if ((len & 0xC0) === 0xC0) { offset += 2; break; }
+        offset += len + 1;
+      }
+      if (offset + 10 > view.length) return dnsQuery;
+      const rdlength = (view[offset + 8] << 8) | view[offset + 9];
+      offset += 10 + rdlength;
+    }
+
+    let optStart = -1;
+    let optEnd = -1;
+    let scanOffset = offset;
+
+    for (let i = 0; i < arcount && scanOffset < view.length; i++) {
+      const rrStart = scanOffset;
+      while (scanOffset < view.length) {
+        const len = view[scanOffset];
+        if (len === 0) { scanOffset++; break; }
+        if ((len & 0xC0) === 0xC0) { scanOffset += 2; break; }
+        scanOffset += len + 1;
+      }
+      if (scanOffset + 10 > view.length) break;
+      const rrType = (view[scanOffset] << 8) | view[scanOffset + 1];
+      const rdlength = (view[scanOffset + 8] << 8) | view[scanOffset + 9];
+      const rrEnd = scanOffset + 10 + rdlength;
+      if (rrType === 41) {
+        optStart = rrStart;
+        optEnd = rrEnd;
+        break;
+      }
+      scanOffset = rrEnd;
+    }
+
+    if (optStart === -1) return dnsQuery;
+
+    const optNameEnd = optStart + 1;
+    const optRdataStart = optNameEnd + 9;
+    const optRdataEnd = optEnd;
+
+    let hasECS = false;
+    let rPos = optRdataStart;
+    while (rPos + 4 <= optRdataEnd) {
+      const optCode = (view[rPos] << 8) | view[rPos + 1];
+      const optLen = (view[rPos + 2] << 8) | view[rPos + 3];
+      if (optCode === 8) { hasECS = true; break; }
+      rPos += 4 + optLen;
+    }
+
+    if (!hasECS) return dnsQuery;
+
+    const newRdataBytes = [];
+    rPos = optRdataStart;
+    while (rPos + 4 <= optRdataEnd) {
+      const optCode = (view[rPos] << 8) | view[rPos + 1];
+      const optLen = (view[rPos + 2] << 8) | view[rPos + 3];
+      if (optCode !== 8) {
+        for (let j = rPos; j < rPos + 4 + optLen && j < view.length; j++) {
+          newRdataBytes.push(view[j]);
+        }
+      }
+      rPos += 4 + optLen;
+    }
+
+    const newRdlength = newRdataBytes.length;
+    const sizeDiff = (optRdataEnd - optRdataStart) - newRdlength;
+    const resultSize = view.length - sizeDiff;
+    const result = new Uint8Array(resultSize);
+
+    let writePos = 0;
+    for (let j = 0; j < optRdataStart; j++) result[writePos++] = view[j];
+
+    result[optRdataStart - 2] = (newRdlength >> 8) & 0xFF;
+    result[optRdataStart - 1] = newRdlength & 0xFF;
+
+    for (const b of newRdataBytes) result[writePos++] = b;
+
+    for (let j = optRdataEnd; j < view.length; j++) result[writePos++] = view[j];
+
+    return result.buffer;
+  } catch (e) {
+    return dnsQuery;
+  }
 }
 
 function buildEnhancedHeaders(baseHeaders) {
   const headers = { ...baseHeaders };
-  
+
   if (Math.random() < 0.4) {
     const randomHeader = ADDITIONAL_HEADERS[Math.floor(Math.random() * ADDITIONAL_HEADERS.length)];
     const headerKey = Object.keys(randomHeader)[0];
     const headerValue = randomHeader[headerKey]();
     headers[headerKey] = headerValue;
   }
-  
+
   if (Math.random() < 0.25) {
     headers['X-Forwarded-For'] = `${Math.floor(Math.random() * 223) + 1}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
   }
-  
+
   return headers;
 }
 
@@ -524,18 +680,18 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
   let processedQuery = applyQnameMinimization(dnsQuery);
   processedQuery = applyDnsPadding(processedQuery);
   processedQuery = stripECS(processedQuery);
-  
+
   const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT, clientRegion);
-  
+
   const racePromises = selectedProviders.map(async (provider) => {
     const startTime = Date.now();
     const controller = new AbortController();
     const adaptiveTimeout = getAdaptiveTimeout(provider);
     const timeoutId = setTimeout(() => controller.abort(), adaptiveTimeout);
-    
+
     try {
       await sleep(getRandomDelay());
-      
+
       const requestHeaders = buildEnhancedHeaders({
         'Content-Type': 'application/dns-message',
         'Accept': getRandomAcceptHeader(),
@@ -543,7 +699,7 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
         'Cache-Control': 'no-cache',
         'DNT': '1'
       });
-      
+
       const response = await fetch(provider.url, {
         method: 'POST',
         headers: requestHeaders,
@@ -554,30 +710,30 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
           cacheEverything: true
         }
       });
-      
+
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
-      
+
       if (!response.ok) {
         updateProviderMetrics(provider, false, responseTime);
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const responseData = await response.arrayBuffer();
-      
+
       if (responseData.byteLength > MAX_DNS_RESPONSE_SIZE) {
         updateProviderMetrics(provider, false, responseTime);
         throw new Error('Response too large');
       }
-      
+
       updateProviderMetrics(provider, true, responseTime);
-      
+
       return {
         data: responseData,
         provider: provider.url,
         responseTime: responseTime
       };
-      
+
     } catch (error) {
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
@@ -585,42 +741,42 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
       throw error;
     }
   });
-  
+
   return Promise.any(racePromises);
 }
 
 async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [], clientRegion = 'global') {
   const availableProviders = UPSTREAM_DNS_PROVIDERS
-    .filter(p => 
-      !excludeProviders.includes(p.url) && 
+    .filter(p =>
+      !excludeProviders.includes(p.url) &&
       p.healthScore > 15 &&
       checkCircuitBreaker(p)
     )
     .sort((a, b) => calculateProviderScore(b, clientRegion) - calculateProviderScore(a, clientRegion))
     .slice(0, 8);
-  
+
   for (const provider of availableProviders) {
     const startTime = Date.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FALLBACK_TIMEOUT);
-    
+
     try {
       const requestHeaders = buildEnhancedHeaders({
         'Content-Type': 'application/dns-message',
         'Accept': 'application/dns-message',
         'User-Agent': getRandomUserAgent()
       });
-      
+
       const response = await fetch(provider.url, {
         method: 'POST',
         headers: requestHeaders,
         body: dnsQuery,
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const responseData = await response.arrayBuffer();
         updateProviderMetrics(provider, true, responseTime);
@@ -630,7 +786,7 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [],
           responseTime: responseTime
         };
       }
-      
+
       updateProviderMetrics(provider, false, responseTime);
     } catch (error) {
       clearTimeout(timeoutId);
@@ -638,16 +794,16 @@ async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [],
       updateProviderMetrics(provider, false, responseTime);
     }
   }
-  
+
   throw new Error('All fallback providers failed');
 }
 
 function getCacheKey(dnsQuery) {
   const view = new Uint8Array(dnsQuery);
-  let hash = 0;
-  for (let i = 12; i < Math.min(view.length, 100); i++) {
-    hash = ((hash << 5) - hash) + view[i];
-    hash = hash & hash;
+  let hash = 2166136261;
+  for (let i = 4; i < view.length; i++) {
+    hash ^= view[i];
+    hash = Math.imul(hash, 16777619) >>> 0;
   }
   return `dns_${hash}`;
 }
@@ -655,12 +811,12 @@ function getCacheKey(dnsQuery) {
 function getCachedResponse(cacheKey) {
   const cached = dnsCache.get(cacheKey);
   if (!cached) return null;
-  
+
   if (Date.now() - cached.timestamp > cached.ttl * 1000) {
     dnsCache.delete(cacheKey);
     return null;
   }
-  
+
   return cached.response;
 }
 
@@ -671,7 +827,7 @@ function setCachedResponse(cacheKey, response, ttl = DNS_CACHE_TTL_DEFAULT) {
     timestamp: Date.now(),
     ttl: finalTTL
   });
-  
+
   if (dnsCache.size > 8000) {
     const sortedEntries = Array.from(dnsCache.entries())
       .sort((a, b) => a[1].timestamp - b[1].timestamp);
@@ -683,12 +839,12 @@ function setCachedResponse(cacheKey, response, ttl = DNS_CACHE_TTL_DEFAULT) {
 function checkNegativeCache(cacheKey) {
   const cached = negativeDnsCache.get(cacheKey);
   if (!cached) return null;
-  
+
   if (Date.now() - cached.timestamp > NEGATIVE_CACHE_TTL * 1000) {
     negativeDnsCache.delete(cacheKey);
     return null;
   }
-  
+
   return cached.response;
 }
 
@@ -697,7 +853,7 @@ function setNegativeCache(cacheKey, response) {
     response: response,
     timestamp: Date.now()
   });
-  
+
   if (negativeDnsCache.size > 2000) {
     const oldestKeys = Array.from(negativeDnsCache.keys()).slice(0, 500);
     oldestKeys.forEach(key => negativeDnsCache.delete(key));
@@ -720,7 +876,7 @@ function extractTTL(dnsResponse) {
     const view = new DataView(dnsResponse);
     let offset = 12;
     const qdcount = view.getUint16(4);
-    
+
     for (let i = 0; i < qdcount; i++) {
       while (offset < dnsResponse.byteLength && view.getUint8(offset) !== 0) {
         const len = view.getUint8(offset);
@@ -729,7 +885,7 @@ function extractTTL(dnsResponse) {
       }
       offset += 5;
     }
-    
+
     if (offset + 10 < dnsResponse.byteLength) {
       offset += 10;
       const ttl = view.getUint32(offset);
@@ -743,7 +899,7 @@ function extractTTL(dnsResponse) {
 
 function isRateLimited(clientIP) {
   const now = Date.now();
-  
+
   if (now - lastCleanupTime > RATE_LIMIT_CLEANUP_INTERVAL) {
     const cutoff = now - RATE_LIMIT_WINDOW;
     for (const [ip, data] of rateLimitMap.entries()) {
@@ -753,9 +909,9 @@ function isRateLimited(clientIP) {
     }
     lastCleanupTime = now;
   }
-  
+
   let clientData = rateLimitMap.get(clientIP);
-  
+
   if (!clientData || now - clientData.windowStart > RATE_LIMIT_WINDOW) {
     clientData = {
       count: 0,
@@ -763,28 +919,27 @@ function isRateLimited(clientIP) {
     };
     rateLimitMap.set(clientIP, clientData);
   }
-  
+
   clientData.count++;
-  
+
   return clientData.count > RATE_LIMIT_REQUESTS;
 }
 
 async function sendDecoyRequests() {
   if (Math.random() > DECOY_REQUEST_PROBABILITY) return;
-  
-  const decoyDomains = ['example.com', 'example.org', 'example.net', 'cloudflare.com', 'google.com'];
-  const randomDomain = decoyDomains[Math.floor(Math.random() * decoyDomains.length)];
-  
+
+  const randomDomain = DECOY_DOMAINS[Math.floor(Math.random() * DECOY_DOMAINS.length)];
+
   const decoyQuery = new Uint8Array([
     0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ...Array.from(randomDomain.split('.').map(part => 
+    ...Array.from(randomDomain.split('.').map(part =>
       [part.length, ...Array.from(part).map(c => c.charCodeAt(0))]
     ).flat()),
     0x00, 0x00, 0x01, 0x00, 0x01
   ]);
-  
+
   const randomProvider = UPSTREAM_DNS_PROVIDERS[Math.floor(Math.random() * UPSTREAM_DNS_PROVIDERS.length)];
-  
+
   try {
     fetch(randomProvider.url, {
       method: 'POST',
@@ -797,66 +952,152 @@ async function sendDecoyRequests() {
   } catch (e) {}
 }
 
+function buildCORSHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Cache-Control, DNT',
+    'Access-Control-Max-Age': '86400'
+  };
+}
+
+async function resolveViaJSON(dnsQuery, clientRegion) {
+  const view = new Uint8Array(dnsQuery);
+  let offset = 12;
+  let name = '';
+  while (offset < view.length) {
+    const len = view[offset];
+    if (len === 0) { offset++; break; }
+    if (name) name += '.';
+    for (let i = 1; i <= len; i++) name += String.fromCharCode(view[offset + i]);
+    offset += len + 1;
+  }
+  const qtype = (view[offset] << 8) | view[offset + 1];
+
+  const jsonProvider = 'https://cloudflare-dns.com/dns-query';
+  const jsonUrl = `${jsonProvider}?name=${encodeURIComponent(name)}&type=${qtype}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RACE_TIMEOUT);
+
+  try {
+    const response = await fetch(jsonUrl, {
+      headers: {
+        'Accept': 'application/dns-json',
+        'User-Agent': getRandomUserAgent()
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (e) {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
 async function handleDNSQuery(request) {
   const url = new URL(request.url);
   const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
   const cfData = request.cf || {};
   const clientRegion = getClientRegion(cfData);
-  
+  const origin = request.headers.get('Origin');
+  const corsHeaders = buildCORSHeaders(origin);
+  const acceptHeader = request.headers.get('Accept') || '';
+  const wantsJSON = acceptHeader.includes('application/dns-json');
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   if (isRateLimited(clientIP)) {
-    return new Response('Rate limit exceeded', { 
+    return new Response('Rate limit exceeded', {
       status: 429,
       headers: {
+        ...corsHeaders,
         'Retry-After': '60',
         'Content-Type': 'text/plain',
         'X-Rate-Limit': `${RATE_LIMIT_REQUESTS}/${RATE_LIMIT_WINDOW/1000}s`
       }
     });
   }
-  
+
   let dnsQuery;
-  
+
   if (request.method === 'POST') {
     dnsQuery = await request.arrayBuffer();
   } else if (request.method === 'GET') {
     const dnsParam = url.searchParams.get('dns');
     if (!dnsParam) {
-      return new Response('Missing dns parameter', { status: 400 });
+      if (wantsJSON) {
+        const name = url.searchParams.get('name');
+        const type = url.searchParams.get('type') || 'A';
+        if (name) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), RACE_TIMEOUT);
+          try {
+            const cfUrl = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`;
+            const resp = await fetch(cfUrl, {
+              headers: { 'Accept': 'application/dns-json', 'User-Agent': getRandomUserAgent() },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (resp.ok) {
+              const jsonData = await resp.json();
+              return new Response(JSON.stringify(jsonData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/dns-json', 'X-Cache': 'MISS' }
+              });
+            }
+          } catch (e) {
+            clearTimeout(timeoutId);
+          }
+          return new Response(JSON.stringify({ Status: 2 }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/dns-json' }
+          });
+        }
+      }
+      return new Response('Missing dns parameter', { status: 400, headers: corsHeaders });
     }
     try {
       const paddedDns = dnsParam.replace(/-/g, '+').replace(/_/g, '/');
       const padding = '='.repeat((4 - (paddedDns.length % 4)) % 4);
       dnsQuery = Uint8Array.from(atob(paddedDns + padding), c => c.charCodeAt(0)).buffer;
     } catch (e) {
-      return new Response('Invalid dns parameter', { status: 400 });
+      return new Response('Invalid dns parameter', { status: 400, headers: corsHeaders });
     }
   } else {
-    return new Response('Method not allowed', { status: 405 });
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
-  
+
   if (dnsQuery.byteLength > MAX_DNS_REQUEST_SIZE) {
-    return new Response('Request too large', { status: 413 });
+    return new Response('Request too large', { status: 413, headers: corsHeaders });
   }
-  
+
   if (concurrentRequests >= MAX_CONCURRENT_REQUESTS) {
-    return new Response('Server busy', { status: 503 });
+    return new Response('Server busy', { status: 503, headers: corsHeaders });
   }
-  
+
   concurrentRequests++;
   globalRequestCount++;
-  
+
   try {
     performHealthCheck().catch(() => {});
     performAdaptiveLearning().catch(() => {});
     sendDecoyRequests().catch(() => {});
-    
+
     const cacheKey = getCacheKey(dnsQuery);
-    
+
     const negativeCached = checkNegativeCache(cacheKey);
     if (negativeCached) {
       return new Response(negativeCached, {
         status: 200,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/dns-message',
           'Cache-Control': `public, max-age=${NEGATIVE_CACHE_TTL}`,
           'X-Cache': 'NEGATIVE-HIT',
@@ -864,12 +1105,13 @@ async function handleDNSQuery(request) {
         }
       });
     }
-    
+
     const cachedResponse = getCachedResponse(cacheKey);
     if (cachedResponse) {
       return new Response(cachedResponse, {
         status: 200,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/dns-message',
           'Cache-Control': `public, max-age=${DNS_CACHE_TTL_DEFAULT}`,
           'X-Cache': 'HIT',
@@ -878,24 +1120,49 @@ async function handleDNSQuery(request) {
         }
       });
     }
-    
+
+    if (pendingRequests.has(cacheKey)) {
+      try {
+        const coalescedResult = await pendingRequests.get(cacheKey);
+        return new Response(coalescedResult.data, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/dns-message',
+            'Cache-Control': `public, max-age=${extractTTL(coalescedResult.data)}`,
+            'X-Cache': 'COALESCED',
+            'X-Provider': coalescedResult.provider,
+            'X-Response-Time': `${coalescedResult.responseTime}ms`,
+            'X-Client-Region': clientRegion
+          }
+        });
+      } catch (e) {
+      }
+    }
+
+    const requestPromise = raceMultipleProviders(dnsQuery, request.headers, clientRegion)
+      .catch(() => fallbackProviderRequest(dnsQuery, request.headers, [], clientRegion));
+
+    pendingRequests.set(cacheKey, requestPromise);
+
     let result;
     try {
-      result = await raceMultipleProviders(dnsQuery, request.headers, clientRegion);
-    } catch (raceError) {
-      result = await fallbackProviderRequest(dnsQuery, request.headers, [], clientRegion);
+      result = await requestPromise;
+    } finally {
+      pendingRequests.delete(cacheKey);
     }
-    
+
     if (isNXDOMAIN(result.data)) {
       setNegativeCache(cacheKey, result.data);
     } else {
       const ttl = extractTTL(result.data);
       setCachedResponse(cacheKey, result.data, ttl);
     }
-    
+
     return new Response(result.data, {
       status: 200,
       headers: {
+        ...corsHeaders,
         'Content-Type': 'application/dns-message',
         'Cache-Control': `public, max-age=${extractTTL(result.data)}`,
         'X-Cache': 'MISS',
@@ -904,11 +1171,12 @@ async function handleDNSQuery(request) {
         'X-Client-Region': clientRegion
       }
     });
-    
+
   } catch (error) {
-    return new Response('DNS query failed', { 
+    return new Response('DNS query failed', {
       status: 502,
       headers: {
+        ...corsHeaders,
         'Content-Type': 'text/plain',
         'X-Error': error.message
       }
@@ -922,7 +1190,7 @@ function generateAppleProfile(requestUrl) {
   const baseUrl = new URL(requestUrl);
   const dohUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const hostname = baseUrl.hostname;
-  
+
   const uuid1 = crypto.randomUUID();
   const uuid2 = crypto.randomUUID();
   const uuid3 = crypto.randomUUID();
@@ -982,12 +1250,12 @@ function generateStatsPage() {
   const totalProviders = UPSTREAM_DNS_PROVIDERS.length;
   const healthyProviders = UPSTREAM_DNS_PROVIDERS.filter(p => p.healthScore > 50).length;
   const avgHealth = UPSTREAM_DNS_PROVIDERS.reduce((sum, p) => sum + p.healthScore, 0) / totalProviders;
-  
+
   const topProviders = UPSTREAM_DNS_PROVIDERS
     .filter(p => p.totalRequests > 0)
     .sort((a, b) => calculateProviderScore(b) - calculateProviderScore(a))
     .slice(0, 15);
-  
+
   return `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
@@ -1190,7 +1458,7 @@ async function handleRequest(request) {
   if (path === '/dns-query') {
     return handleDNSQuery(request);
   }
-  
+
   if (path === '/apple') {
     const profile = generateAppleProfile(request.url);
     return new Response(profile, {
@@ -1200,13 +1468,13 @@ async function handleRequest(request) {
       }
     });
   }
-  
+
   if (path === '/stats') {
     return new Response(generateStatsPage(), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
   }
-  
+
   const baseUrl = new URL(request.url);
   const workerUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
   const workerHost = baseUrl.hostname;
@@ -1622,16 +1890,41 @@ async function handleRequest(request) {
                 <div class="feature-icon">🌐</div>
                 <div class="feature-text">بهره‌مندی از ECH در سرورهای Cloudflare</div>
             </div>
+            <div class="feature-item">
+                <div class="feature-icon">🔗</div>
+                <div class="feature-text">Request Coalescing - ادغام هوشمند درخواست‌های تکراری برای کاهش latency</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🌏</div>
+                <div class="feature-text">CORS Support - پشتیبانی کامل از درخواست‌های مرورگر بدون محدودیت Cross-Origin</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">📡</div>
+                <div class="feature-text">JSON DoH API - پشتیبانی از فرمت application/dns-json برای سازگاری بیشتر</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-text">اجرای واقعی RFC 8467 DNS Padding با OPT Record استاندارد</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🧹</div>
+                <div class="feature-text">ECS Stripping پیشرفته - پارس و حذف واقعی EDNS Client Subnet از OPT Record</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🎲</div>
+                <div class="feature-text">Decoy Traffic با 20 دامنه متنوع برای مخفی‌سازی الگوی ترافیک DNS</div>
+            </div>
         </div>
 
         <h2>🌐 DNS Providers استفاده شده:</h2>
         <div class="dns-list">
-            <div class="dns-item">بیش از 200 سرور DNS معتبر از کشورهای مختلف با پشتیبانی Geo-location</div>
+            <div class="dns-item">بیش از 220 سرور DNS معتبر از کشورهای مختلف با پشتیبانی Geo-location</div>
             <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
             <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
+            <div class="dns-item">• AhaDNS (آمریکا، هلند، لهستان، هند، سنگاپور، استرالیا)</div>
             <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
             <div class="dns-item">• Pi-DNS (اروپا، آمریکا)</div>
-            <div class="dns-item">• و 50+ سرور دیگر با پوشش جهانی...</div>
+            <div class="dns-item">• و 60+ سرور دیگر با پوشش جهانی...</div>
         </div>
 
         <div class="info-box">
@@ -1911,6 +2204,7 @@ async function handleRequest(request) {
             • پورت HTTP (10809) و SOCKS (10808)</p>
         </div>
 
+
         <div class="usage-card">
             <h3>💻 ویندوز 10/11</h3>
             <p>Settings → Network & Internet → Properties → DNS server assignment → Edit → Preferred DNS encryption: Encrypted only (DNS over HTTPS) و آدرس بالا را وارد کنید.</p>
@@ -1979,7 +2273,11 @@ async function handleRequest(request) {
             A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند. فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.<br><br>
             
             <strong>Q: تکنولوژی Parallel Racing چگونه کار می‌کند؟</strong><br>
-            A: این سیستم همزمان به 10 سرور DNS برتر (با امتیازدهی بر اساس منطقه جغرافیایی، سرعت، سلامت و قابلیت اطمینان) درخواست می‌فرستد و اولین پاسخ سریع را قبول می‌کند. این باعث کاهش latency و افزایش قابلیت اطمینان می‌شود.
+            A: این سیستم همزمان به 10 سرور DNS برتر (با امتیازدهی بر اساس منطقه جغرافیایی، سرعت، سلامت و قابلیت اطمینان) درخواست می‌فرستد و اولین پاسخ سریع را قبول می‌کند. این باعث کاهش latency و افزایش قابلیت اطمینان می‌شود.<br><br>
+            
+            <strong>Q: Request Coalescing چیست؟</strong><br>
+            A: وقتی چند کاربر یا برنامه در یک لحظه برای یک دامنه یکسان Query می‌زنند، به جای ارسال چند درخواست جداگانه به upstream، Worker یک درخواست ارسال می‌کند و پاسخ را بین همه به اشتراک می‌گذارد. این باعث کاهش بار سرور و کاهش latency می‌شود.<br><br>
+            
         </div>
 
         <div class="footer">
