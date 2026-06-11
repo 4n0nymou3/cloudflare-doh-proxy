@@ -2200,8 +2200,7 @@ async function handleRequest(request) {
         "type": "field",
         "outboundTag": "block",
         "ip": [
-          "geoip:private",
-          "geoip:cn"
+          "geoip:private"
         ]
       },
       {
