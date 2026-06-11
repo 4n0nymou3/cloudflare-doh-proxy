@@ -2230,8 +2230,7 @@ async function handleRequest(request) {
             <p><strong>مزایای کانفیگ Fragment:</strong><br>
             • قابلیت Fragment برای دور زدن DPI<br>
             • تکه‌تکه کردن بسته‌های TLS Hello<br>
-            • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته<br>
-            • پورت HTTP (10809) و SOCKS (10808)</p>
+            • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته</p>
         </div>
 
 
