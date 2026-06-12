@@ -2060,7 +2060,7 @@ async function handleRequest(request) {
     "access": "",
     "error": "",
     "loglevel": "warning",
-    "dnsLog": true
+    "dnsLog": false
   },
   "dns": {
     "tag": "dns-in",
@@ -2119,8 +2119,8 @@ async function handleRequest(request) {
         "fragment": {
           "packets": "1-1",
           "length": "1",
-          "interval": "4",
-          "maxSplit": "517"
+          "interval": "13",
+          "maxSplit": "163"
         }
       },
       "streamSettings": {
@@ -2145,22 +2145,18 @@ async function handleRequest(request) {
         "domainStrategy": "UseIP",
         "targetStrategy": "ForceIPv6v4",
         "noises": [
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1250", "delay": "10", "applyTo": "ipv4" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" },
-          { "type": "rand", "packet": "1230", "delay": "10", "applyTo": "ipv6" }
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv4" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" },
+          { "type": "rand", "packet": "1200-1230", "delay": "10", "applyTo": "ipv6" }
         ]
       },
       "streamSettings": {
@@ -2169,6 +2165,10 @@ async function handleRequest(request) {
           "domainStrategy": "UseIP"
         }
       }
+    },
+    {
+      "tag": "direct-out",
+      "protocol": "freedom"
     },
     {
       "tag": "dns-out",
@@ -2200,8 +2200,22 @@ async function handleRequest(request) {
         "type": "field",
         "outboundTag": "block",
         "ip": [
-          "geoip:private",
-          "geoip:cn"
+          "geoip:private"
+        ]
+      },
+      {
+        "type": "field",
+        "outboundTag": "direct-out",
+        "domain": [
+          "domain:ir",
+          "geosite:category-ir"
+        ]
+      },
+      {
+        "type": "field",
+        "outboundTag": "direct-out",
+        "ip": [
+          "geoip:ir"
         ]
       },
       {
