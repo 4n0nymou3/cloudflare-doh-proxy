@@ -595,7 +595,7 @@ Timeout: 2500ms
 
 ## 👨‍💻 سازنده
 
-طراحی و توسعه توسط: [Anonymous](https://t.me/BXAMbot)
+طراحی و توسعه توسط: [Anonymous](https://t.me/An0nymou3Bot)
 
 ---
 
