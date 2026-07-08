@@ -212,13 +212,9 @@ const RATE_LIMIT_REQUESTS = 200;
 const RATE_LIMIT_WINDOW = 60000;
 const RATE_LIMIT_CLEANUP_INTERVAL = 120000;
 const MAX_CONCURRENT_REQUESTS = 150;
-const RANDOM_DELAY_MIN = 5;
-const RANDOM_DELAY_MAX = 100;
-const DECOY_REQUEST_PROBABILITY = 0.25;
 const CIRCUIT_BREAKER_THRESHOLD = 5;
 const CIRCUIT_BREAKER_TIMEOUT = 60000;
 const NEGATIVE_CACHE_TTL = 300;
-const QNAME_MINIMIZATION_ENABLED = true;
 const DNS_PADDING_ENABLED = true;
 const ECS_STRIPPING_ENABLED = true;
 
@@ -261,27 +257,12 @@ const ADDITIONAL_HEADERS = [
   { 'Sec-CH-UA': () => `"Chromium";v="${120 + Math.floor(Math.random() * 10)}", "Google Chrome";v="${120 + Math.floor(Math.random() * 10)}"` }
 ];
 
-const DECOY_DOMAINS = [
-  'example.com', 'example.org', 'example.net', 'cloudflare.com', 'google.com',
-  'wikipedia.org', 'github.com', 'microsoft.com', 'apple.com', 'amazon.com',
-  'youtube.com', 'twitter.com', 'facebook.com', 'reddit.com', 'stackoverflow.com',
-  'mozilla.org', 'w3.org', 'ietf.org', 'rfc-editor.org', 'archive.org'
-];
-
 function getRandomUserAgent() {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
 function getRandomAcceptHeader() {
   return ACCEPT_HEADERS[Math.floor(Math.random() * ACCEPT_HEADERS.length)];
-}
-
-function getRandomDelay() {
-  return Math.floor(Math.random() * (RANDOM_DELAY_MAX - RANDOM_DELAY_MIN + 1)) + RANDOM_DELAY_MIN;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getAdaptiveTimeout(provider) {
@@ -498,11 +479,6 @@ async function performHealthCheck() {
   await Promise.allSettled(healthCheckPromises);
 }
 
-function applyQnameMinimization(dnsQuery) {
-  if (!QNAME_MINIMIZATION_ENABLED) return dnsQuery;
-  return dnsQuery;
-}
-
 function applyDnsPadding(dnsQuery) {
   if (!DNS_PADDING_ENABLED) return dnsQuery;
   try {
@@ -677,8 +653,7 @@ function buildEnhancedHeaders(baseHeaders) {
 }
 
 async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global') {
-  let processedQuery = applyQnameMinimization(dnsQuery);
-  processedQuery = applyDnsPadding(processedQuery);
+  let processedQuery = applyDnsPadding(dnsQuery);
   processedQuery = stripECS(processedQuery);
 
   const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT, clientRegion);
@@ -690,8 +665,6 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
     const timeoutId = setTimeout(() => controller.abort(), adaptiveTimeout);
 
     try {
-      await sleep(getRandomDelay());
-
       const requestHeaders = buildEnhancedHeaders({
         'Content-Type': 'application/dns-message',
         'Accept': getRandomAcceptHeader(),
@@ -704,11 +677,7 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
         method: 'POST',
         headers: requestHeaders,
         body: processedQuery,
-        signal: controller.signal,
-        cf: {
-          cacheTtl: DNS_CACHE_TTL_DEFAULT,
-          cacheEverything: true
-        }
+        signal: controller.signal
       });
 
       clearTimeout(timeoutId);
@@ -925,33 +894,6 @@ function isRateLimited(clientIP) {
   return clientData.count > RATE_LIMIT_REQUESTS;
 }
 
-async function sendDecoyRequests() {
-  if (Math.random() > DECOY_REQUEST_PROBABILITY) return;
-
-  const randomDomain = DECOY_DOMAINS[Math.floor(Math.random() * DECOY_DOMAINS.length)];
-
-  const decoyQuery = new Uint8Array([
-    0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ...Array.from(randomDomain.split('.').map(part =>
-      [part.length, ...Array.from(part).map(c => c.charCodeAt(0))]
-    ).flat()),
-    0x00, 0x00, 0x01, 0x00, 0x01
-  ]);
-
-  const randomProvider = UPSTREAM_DNS_PROVIDERS[Math.floor(Math.random() * UPSTREAM_DNS_PROVIDERS.length)];
-
-  try {
-    fetch(randomProvider.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/dns-message',
-        'User-Agent': getRandomUserAgent()
-      },
-      body: decoyQuery
-    }).catch(() => {});
-  } catch (e) {}
-}
-
 function buildCORSHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin || '*',
@@ -959,44 +901,6 @@ function buildCORSHeaders(origin) {
     'Access-Control-Allow-Headers': 'Content-Type, Accept, Cache-Control, DNT',
     'Access-Control-Max-Age': '86400'
   };
-}
-
-async function resolveViaJSON(dnsQuery, clientRegion) {
-  const view = new Uint8Array(dnsQuery);
-  let offset = 12;
-  let name = '';
-  while (offset < view.length) {
-    const len = view[offset];
-    if (len === 0) { offset++; break; }
-    if (name) name += '.';
-    for (let i = 1; i <= len; i++) name += String.fromCharCode(view[offset + i]);
-    offset += len + 1;
-  }
-  const qtype = (view[offset] << 8) | view[offset + 1];
-
-  const jsonProvider = 'https://cloudflare-dns.com/dns-query';
-  const jsonUrl = `${jsonProvider}?name=${encodeURIComponent(name)}&type=${qtype}`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), RACE_TIMEOUT);
-
-  try {
-    const response = await fetch(jsonUrl, {
-      headers: {
-        'Accept': 'application/dns-json',
-        'User-Agent': getRandomUserAgent()
-      },
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (response.ok) {
-      return await response.json();
-    }
-    return null;
-  } catch (e) {
-    clearTimeout(timeoutId);
-    return null;
-  }
 }
 
 async function handleDNSQuery(request) {
@@ -1088,7 +992,6 @@ async function handleDNSQuery(request) {
   try {
     performHealthCheck().catch(() => {});
     performAdaptiveLearning().catch(() => {});
-    sendDecoyRequests().catch(() => {});
 
     const cacheKey = getCacheKey(dnsQuery);
 
@@ -1261,137 +1164,181 @@ function generateStatsPage() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DoH Proxy Pro - آمار زنده</title>
+    <title>DoH Proxy Pro — آمار زنده</title>
     <style>
+        :root {
+            --canvas-default: #0d1117;
+            --canvas-subtle: #161b22;
+            --canvas-inset: #010409;
+            --canvas-overlay: #1c2128;
+            --border-default: #30363d;
+            --fg-default: #e6edf3;
+            --fg-muted: #8b949e;
+            --accent-fg: #4493f8;
+            --accent-emphasis: #1f6feb;
+            --success-fg: #3fb950;
+            --success-emphasis: #238636;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+            --font-mono: ui-monospace, "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
-            padding: 20px;
+            font-family: var(--font-sans);
+            background-color: var(--canvas-default);
+            color: var(--fg-default);
             min-height: 100vh;
         }
+        .topbar {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-default);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .topbar a {
+            color: var(--fg-default);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            padding: 32px 24px 40px;
         }
         h1 {
-            color: #58a6ff;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 600;
+            color: var(--fg-default);
+            font-size: 2em;
+            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
         .subtitle {
-            color: #8b949e;
-            margin-bottom: 40px;
-            font-size: 1.1em;
+            color: var(--fg-muted);
+            margin-bottom: 32px;
+            font-size: 1em;
+            direction: ltr;
+            text-align: right;
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+            margin-bottom: 32px;
         }
         .stat-card {
-            background: #1c2128;
-            border: 1px solid #30363d;
-            padding: 25px;
-            border-radius: 12px;
-            transition: all 0.2s;
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
+            padding: 20px;
+            border-radius: 10px;
+            transition: border-color 0.15s, transform 0.15s;
         }
         .stat-card:hover {
-            border-color: #58a6ff;
+            border-color: var(--accent-fg);
             transform: translateY(-2px);
         }
         .stat-label {
-            font-size: 0.9em;
-            color: #8b949e;
-            margin-bottom: 10px;
+            font-size: 0.88em;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
         }
         .stat-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #58a6ff;
+            font-size: 2.1em;
+            font-weight: 700;
+            color: var(--accent-fg);
+            font-family: var(--font-mono);
         }
         .table-container {
-            background: #1c2128;
-            border: 1px solid #30363d;
-            border-radius: 12px;
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 30px;
         }
         .table-wrapper {
             overflow-x: auto;
             overflow-y: auto;
             max-height: 600px;
         }
+        .table-wrapper::-webkit-scrollbar { width: 10px; height: 10px; }
+        .table-wrapper::-webkit-scrollbar-track { background: transparent; }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 6px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
+            min-width: 760px;
         }
         th, td {
-            padding: 15px;
+            padding: 12px 15px;
             text-align: right;
-            border-bottom: 1px solid #30363d;
+            border-bottom: 1px solid var(--border-default);
+            font-size: 0.92em;
         }
+        td { font-family: var(--font-mono); direction: ltr; text-align: right; }
+        td:first-child { font-family: var(--font-sans); direction: rtl; }
         th {
-            background: #0d1117;
-            color: #58a6ff;
+            background: var(--canvas-inset);
+            color: var(--fg-muted);
+            font-family: var(--font-sans);
             font-weight: 600;
+            font-size: 0.85em;
             position: sticky;
             top: 0;
             z-index: 10;
         }
-        tr:hover {
-            background: #161b22;
-        }
+        tr:hover { background: var(--canvas-overlay); }
         .health-bar {
-            height: 8px;
+            height: 6px;
             background: #21262d;
-            border-radius: 4px;
+            border-radius: 3px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 6px;
+            width: 100px;
         }
         .health-fill {
             height: 100%;
-            background: linear-gradient(90deg, #238636 0%, #2ea043 100%);
-            transition: width 0.3s;
+            background: linear-gradient(90deg, var(--success-emphasis) 0%, var(--success-fg) 100%);
         }
         .back-button {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 12px 30px;
-            background: #238636;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 24px;
+            padding: 10px 20px;
+            background: var(--success-emphasis);
             color: white;
             text-decoration: none;
             border-radius: 6px;
-            transition: all 0.2s;
+            transition: background 0.15s;
             font-weight: 600;
+            font-size: 0.92em;
         }
-        .back-button:hover {
-            background: #2ea043;
-            transform: translateY(-2px);
-        }
+        .back-button:hover { background: var(--success-fg); }
+        :focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
         @media (max-width: 768px) {
-            .container { padding: 20px; }
-            h1 { font-size: 1.8em; }
-            .stat-value { font-size: 2em; }
-            .table-wrapper { max-height: 400px; }
-            th, td { padding: 10px; font-size: 0.9em; }
+            .container { padding: 24px 16px 32px; }
+            h1 { font-size: 1.5em; }
+            .stat-value { font-size: 1.7em; }
+            .table-wrapper { max-height: 420px; }
+            th, td { padding: 10px; font-size: 0.85em; }
         }
     </style>
 </head>
 <body>
+    <div class="topbar">
+        <a href="/">🛡️ DoH Proxy Pro</a>
+    </div>
     <div class="container">
         <h1>📊 آمار زنده سرورها</h1>
-        <div class="subtitle">DoH Proxy Pro - Real-time Server Statistics</div>
-        
+        <div class="subtitle">Real-time Server Statistics</div>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">تعداد کل سرورها</div>
@@ -1410,7 +1357,7 @@ function generateStatsPage() {
                 <div class="stat-value">${globalRequestCount}</div>
             </div>
         </div>
-        
+
         <div class="table-container">
             <div class="table-wrapper">
                 <table>
@@ -1444,7 +1391,7 @@ function generateStatsPage() {
                 </table>
             </div>
         </div>
-        
+
         <a href="/" class="back-button">← بازگشت به صفحه اصلی</a>
     </div>
 </body>
@@ -1486,521 +1433,844 @@ async function handleRequest(request) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DoH Proxy Pro - DNS over HTTPS</title>
+    <title>DoH Proxy Pro — DNS over HTTPS</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --canvas-default: #0d1117;
+            --canvas-subtle: #161b22;
+            --canvas-inset: #010409;
+            --canvas-overlay: #1c2128;
+            --border-default: #30363d;
+            --border-muted: #21262d;
+            --fg-default: #e6edf3;
+            --fg-muted: #8b949e;
+            --fg-subtle: #6e7681;
+            --accent-fg: #4493f8;
+            --accent-emphasis: #1f6feb;
+            --success-fg: #3fb950;
+            --success-emphasis: #238636;
+            --danger-fg: #f85149;
+            --attention-fg: #d29922;
+            --done-fg: #a371f7;
+            --shadow-card: 0 8px 24px rgba(1, 4, 9, 0.55);
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            --font-mono: ui-monospace, "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
         }
-        
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
+            font-family: var(--font-sans);
+            background-color: var(--canvas-default);
+            background-image: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(31, 111, 235, 0.16), transparent);
+            background-repeat: no-repeat;
+            color: var(--fg-default);
             line-height: 1.6;
-            padding: 20px;
             min-height: 100vh;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+        a { color: var(--accent-fg); }
+
+        :focus-visible {
+            outline: 2px solid var(--accent-fg);
+            outline-offset: 2px;
+            border-radius: 4px;
         }
-        
-        h1 {
-            color: #58a6ff;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 600;
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-default);
+        }
+
+        .topbar-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
-        
-        .badge {
-            background: linear-gradient(135deg, #238636, #2ea043);
-            color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.4em;
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: var(--fg-default);
+            text-decoration: none;
+            font-size: 0.95em;
+            white-space: nowrap;
         }
-        
+
+        .brand-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, var(--accent-emphasis), var(--done-fg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+
+        .topnav {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .topnav::-webkit-scrollbar { display: none; }
+
+        .topnav a {
+            color: var(--fg-muted);
+            text-decoration: none;
+            font-size: 0.85em;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .topnav a:hover {
+            color: var(--fg-default);
+            background: var(--canvas-overlay);
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 40px 24px 24px;
+        }
+
+        .hero {
+            padding: 8px 0 28px;
+        }
+
+        h1.hero-title {
+            font-size: 2.3em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            letter-spacing: -0.02em;
+            flex-wrap: wrap;
+        }
+
+        .badge-pro {
+            background: linear-gradient(135deg, var(--success-emphasis), var(--success-fg));
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.38em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            vertical-align: middle;
+        }
+
+        .hero-subtitle {
+            color: var(--fg-muted);
+            margin-top: 10px;
+            font-size: 1.02em;
+            max-width: 640px;
+        }
+
+        .shields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        .shield {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.78em;
+            font-weight: 600;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-default);
+        }
+
+        .shield span {
+            padding: 4px 10px;
+        }
+
+        .shield .shield-label {
+            background: var(--canvas-overlay);
+            color: var(--fg-muted);
+        }
+
+        .shield .shield-value {
+            color: #ffffff;
+        }
+
+        .shield.blue .shield-value { background: var(--accent-emphasis); }
+        .shield.green .shield-value { background: var(--success-emphasis); }
+        .shield.purple .shield-value { background: var(--done-fg); }
+        .shield.orange .shield-value { background: #bd561d; }
+
         .status-bar {
-            background: #1c2128;
-            border: 1px solid #30363d;
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
-            padding: 16px 20px;
-            margin: 25px 0;
+            padding: 14px 18px;
+            margin: 24px 0;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
+
         .status-indicator {
-            width: 12px;
-            height: 12px;
-            background: #3fb950;
+            width: 10px;
+            height: 10px;
+            background: var(--success-fg);
             border-radius: 50%;
-            box-shadow: 0 0 8px #3fb950;
+            box-shadow: 0 0 8px var(--success-fg);
+            flex-shrink: 0;
             animation: pulse 2s ease-in-out infinite;
         }
-        
+
+        @media (prefers-reduced-motion: reduce) {
+            .status-indicator { animation: none; }
+            html { scroll-behavior: auto; }
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.45; }
         }
-        
-        .status-text {
-            color: #8b949e;
-            font-size: 0.95em;
-        }
-        
-        .status-text strong {
-            color: #3fb950;
-        }
-        
-        h2 {
-            color: #58a6ff;
-            font-size: 1.6em;
-            margin: 35px 0 20px 0;
+
+        .status-text { color: var(--fg-muted); font-size: 0.92em; }
+        .status-text strong { color: var(--success-fg); }
+
+        section { scroll-margin-top: 72px; }
+
+        h2.section-title {
+            color: var(--fg-default);
+            font-size: 1.35em;
             font-weight: 600;
-            border-bottom: 1px solid #30363d;
+            margin: 44px 0 16px;
             padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
+
+        h3.card-title {
+            color: var(--fg-default);
+            font-size: 1.08em;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card, .info-box, .usage-card {
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin: 16px 0;
+        }
+
         .info-box {
-            background: #1c2128;
-            border: 1px solid #30363d;
-            border-right: 3px solid #58a6ff;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
+            border-inline-start: 3px solid var(--accent-fg);
+            border-start-start-radius: 6px;
+            border-end-start-radius: 6px;
         }
-        
+
+        .info-box strong { color: var(--fg-default); }
+
         .url-container {
-            background: #0d1117;
-            border: 1px solid #30363d;
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
-            padding: 16px;
-            margin: 15px 0;
-            position: relative;
+            padding: 14px 16px;
+            margin: 12px 0;
         }
-        
+
         .url-box {
-            font-family: 'Courier New', Monaco, monospace;
-            color: #79c0ff;
-            font-size: 1em;
+            font-family: var(--font-mono);
+            color: #a5d6ff;
+            font-size: 0.98em;
             word-break: break-all;
             direction: ltr;
             text-align: left;
-            padding: 8px 0;
+            padding: 4px 0 10px;
         }
-        
-        .copy-btn, .download-btn {
-            background: #238636;
-            color: white;
-            border: none;
-            padding: 10px 20px;
+
+        .btn {
+            border: 1px solid var(--border-default);
+            color: var(--fg-default);
+            background: var(--canvas-overlay);
+            padding: 6px 14px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.9em;
+            font-size: 0.85em;
             font-weight: 600;
-            margin-top: 10px;
-            margin-left: 8px;
-            transition: all 0.2s;
+            transition: background 0.15s, border-color 0.15s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-family: var(--font-sans);
         }
-        
-        .copy-btn:hover {
-            background: #2ea043;
+
+        .btn:hover { background: #262c36; border-color: #8b949e; }
+
+        .btn-primary {
+            background: var(--success-emphasis);
+            border-color: var(--success-emphasis);
+            color: #ffffff;
         }
-        
-        .download-btn {
-            background: #6e40c9;
+
+        .btn-primary:hover { background: var(--success-fg); border-color: var(--success-fg); }
+
+        .btn-primary.copied { background: var(--success-fg); border-color: var(--success-fg); }
+
+        .btn-accent {
+            background: var(--accent-emphasis);
+            border-color: var(--accent-emphasis);
+            color: #ffffff;
             text-decoration: none;
         }
-        
-        .download-btn:hover {
-            background: #8957e5;
+
+        .btn-accent:hover { background: var(--accent-fg); border-color: var(--accent-fg); }
+
+        .btn-purple {
+            background: var(--done-fg);
+            border-color: var(--done-fg);
+            color: #ffffff;
+            text-decoration: none;
         }
-        
-        .copy-btn.copied {
-            background: #3fb950;
-        }
-        
+
+        .btn-purple:hover { filter: brightness(1.12); }
+
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
         }
-        
+
         .feature-item {
-            background: #1c2128;
-            border: 1px solid #30363d;
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
-            padding: 16px;
+            padding: 14px 16px;
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            transition: all 0.2s;
+            transition: border-color 0.15s, transform 0.15s;
         }
-        
+
         .feature-item:hover {
-            border-color: #58a6ff;
+            border-color: var(--accent-fg);
             transform: translateY(-2px);
         }
-        
-        .feature-icon {
-            color: #3fb950;
-            font-size: 1.3em;
+
+        .feature-icon { font-size: 1.2em; flex-shrink: 0; }
+        .feature-text { color: var(--fg-default); font-size: 0.92em; }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .provider-chip {
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-muted);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.87em;
+            color: var(--fg-muted);
+        }
+
+        .provider-chip strong { color: var(--fg-default); }
+
+        .warning-box {
+            background: rgba(248, 81, 73, 0.08);
+            border: 1px solid rgba(248, 81, 73, 0.4);
+            border-inline-start: 3px solid var(--danger-fg);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box strong { color: #ff7b72; }
+
+        .filter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.9em;
+        }
+
+        .filter-table th, .filter-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-default);
+            text-align: right;
+            vertical-align: top;
+        }
+
+        .filter-table th {
+            color: var(--fg-muted);
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 9px;
+            border-radius: 12px;
+            font-size: 0.82em;
+            font-weight: 600;
+        }
+
+        .tag-yes { background: rgba(63, 185, 80, 0.15); color: var(--success-fg); }
+        .tag-no { background: rgba(248, 81, 73, 0.15); color: var(--danger-fg); }
+
+        .success-highlight { color: var(--success-fg); font-weight: 600; }
+
+        .stats-link { text-decoration: none; }
+
+        /* GitHub-style code viewer */
+        .code-viewer {
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            margin: 14px 0;
+            overflow: hidden;
+        }
+
+        .code-viewer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--canvas-subtle);
+            border-bottom: 1px solid var(--border-default);
+            padding: 8px 8px 8px 14px;
+        }
+
+        .code-viewer-filename {
+            font-family: var(--font-mono);
+            font-size: 0.83em;
+            color: var(--fg-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: ltr;
+        }
+
+        .code-viewer-filename .lang-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--attention-fg);
             flex-shrink: 0;
         }
-        
-        .feature-text {
-            color: #c9d1d9;
-            font-size: 0.95em;
+
+        .code-viewer-body {
+            max-height: 340px;
+            overflow: auto;
+            direction: ltr;
         }
-        
+
+        .code-viewer-body::-webkit-scrollbar { width: 10px; height: 10px; }
+        .code-viewer-body::-webkit-scrollbar-track { background: transparent; }
+        .code-viewer-body::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 6px;
+            border: 2px solid var(--canvas-inset);
+        }
+        .code-viewer-body::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
         .code-box {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            font-family: 'Courier New', Monaco, monospace;
+            font-family: var(--font-mono);
+            font-size: 0.82em;
+            line-height: 20px;
+            white-space: pre;
+            color: #a5d6ff;
+            padding: 12px 16px;
+            display: block;
+        }
+
+        .code-line { display: flex; }
+
+        .code-gutter {
+            color: var(--fg-subtle);
+            text-align: right;
+            user-select: none;
+            padding-inline-end: 16px;
+            min-width: 2.4em;
+            flex-shrink: 0;
+        }
+
+        .code-content { white-space: pre; }
+
+        .jk { color: #7ee787; }
+        .js { color: #a5d6ff; }
+        .jn { color: #ffa657; }
+        .jb { color: #ff7b72; }
+        .jz { color: #ff7b72; }
+
+        .usage-card p { margin: 10px 0; line-height: 1.75; }
+
+        .inline-code {
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-muted);
+            font-family: var(--font-mono);
             font-size: 0.85em;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            padding: 2px 6px;
+            border-radius: 4px;
+            direction: ltr;
+            display: inline-block;
+        }
+
+        .block-code {
+            background: var(--canvas-inset);
+            border: 1px solid var(--border-muted);
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            padding: 12px 14px;
+            border-radius: 6px;
+            display: block;
+            margin: 10px 0;
             direction: ltr;
             text-align: left;
-            color: #79c0ff;
+            color: #a5d6ff;
+            overflow-x: auto;
         }
-        
-        .usage-card {
-            background: #1c2128;
-            border: 1px solid #30363d;
+
+        details.faq-item {
+            background: var(--canvas-subtle);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
-            padding: 24px;
-            margin: 20px 0;
+            margin: 10px 0;
+            padding: 4px 4px;
         }
-        
-        .usage-card h3 {
-            color: #58a6ff;
-            font-size: 1.2em;
-            margin-bottom: 15px;
+
+        details.faq-item summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 12px 14px;
             font-weight: 600;
+            color: var(--fg-default);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
-        .usage-card p {
-            margin: 12px 0;
-            line-height: 1.7;
+
+        details.faq-item summary::-webkit-details-marker { display: none; }
+
+        details.faq-item summary::before {
+            content: "▶";
+            font-size: 0.7em;
+            color: var(--fg-muted);
+            transition: transform 0.15s;
+            flex-shrink: 0;
         }
-        
-        .warning-box {
-            background: #1c1917;
-            border: 1px solid #f85149;
-            border-right: 3px solid #f85149;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
+
+        details.faq-item[open] summary::before { transform: rotate(90deg); }
+
+        details.faq-item .faq-answer {
+            padding: 0 14px 16px 38px;
+            color: var(--fg-muted);
+            line-height: 1.8;
+            font-size: 0.94em;
         }
-        
-        .warning-box strong {
-            color: #ff7b72;
-        }
-        
-        .success-highlight {
-            color: #3fb950;
-            font-weight: 600;
-        }
-        
-        .dns-list {
-            background: #1c2128;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-        }
-        
-        .dns-item {
-            padding: 10px 15px;
-            margin: 8px 0;
-            background: #0d1117;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.9em;
-            color: #8b949e;
-        }
-        
-        .stats-link {
-            display: inline-block;
-            background: #238636;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            margin: 20px 0;
-            transition: all 0.2s;
-        }
-        
-        .stats-link:hover {
-            background: #2ea043;
-            transform: translateY(-2px);
-        }
-        
+
         .footer {
             text-align: center;
-            margin-top: 50px;
-            padding-top: 30px;
-            border-top: 1px solid #30363d;
-            color: #8b949e;
+            margin-top: 56px;
+            padding: 28px 0;
+            border-top: 1px solid var(--border-default);
+            color: var(--fg-muted);
+            font-size: 0.9em;
         }
-        
-        .footer a {
-            color: #58a6ff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 1.8em;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
+
+        .footer a { text-decoration: none; font-weight: 600; }
+        .footer a:hover { text-decoration: underline; }
+        .footer .footer-sub { margin-top: 8px; font-size: 0.9em; color: var(--fg-subtle); }
+
+        @media (max-width: 720px) {
+            .container { padding: 28px 16px 16px; }
+            h1.hero-title { font-size: 1.7em; }
+            .topbar-inner { padding: 10px 16px; }
         }
     </style>
 </head>
 <body>
+    <div class="topbar">
+        <div class="topbar-inner">
+            <a href="/" class="brand">
+                <span class="brand-mark">🛡️</span>
+                <span>DoH Proxy Pro</span>
+            </a>
+            <nav class="topnav">
+                <a href="#overview">معرفی</a>
+                <a href="#features">امکانات</a>
+                <a href="#providers">سرورها</a>
+                <a href="#setup">راه‌اندازی</a>
+                <a href="#configs">کانفیگ‌ها</a>
+                <a href="#security">امنیت</a>
+                <a href="#faq">سوالات</a>
+                <a href="${statsUrl}">آمار زنده</a>
+            </nav>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>
-            🚀 DoH Proxy
-            <span class="badge">Pro</span>
-        </h1>
-        
+        <div class="hero" id="overview">
+            <h1 class="hero-title">
+                🚀 DoH Proxy
+                <span class="badge-pro">Pro</span>
+            </h1>
+            <p class="hero-subtitle">سرویس شخصی DNS over HTTPS با مسیریابی موازی، Circuit Breaker و انتخاب جغرافیایی سرور — برای دور زدن فیلترینگ در لایه‌ی DNS.</p>
+
+            <div class="shields">
+                <span class="shield blue"><span class="shield-label">runtime</span><span class="shield-value">Cloudflare Workers</span></span>
+                <span class="shield green"><span class="shield-label">protocol</span><span class="shield-value">DNS-over-HTTPS</span></span>
+                <span class="shield purple"><span class="shield-label">providers</span><span class="shield-value">190+</span></span>
+                <span class="shield orange"><span class="shield-label">license</span><span class="shield-value">MIT</span></span>
+            </div>
+        </div>
+
         <div class="status-bar">
             <div class="status-indicator"></div>
             <div class="status-text">
-                <strong>فعال و آماده به کار</strong> - سیستم Parallel Racing، Circuit Breaker، Geo-selection و یادگیری تطبیقی فعال است
+                <strong>فعال و آماده به کار</strong> — Parallel Racing، Circuit Breaker، Geo-selection و یادگیری تطبیقی در حال اجراست
             </div>
         </div>
-        
-        <div class="info-box">
-            <strong>این یک سرویس DNS over HTTPS (DoH) پیشرفته با قابلیت‌های Anti-Censorship است.</strong><br>
-            نسخه Pro با تکنولوژی‌های پیشرفته: Parallel DNS Racing، Circuit Breaker Pattern، Geo-based Selection، QNAME Minimization، DNS Padding، ECS Stripping، Negative Caching، Adaptive Timeouts، Enhanced Header Randomization و 15+ قابلیت دیگر.
-        </div>
-        
-        <a href="${statsUrl}" class="stats-link">📊 مشاهده آمار زنده سرورها</a>
 
-        <h2>📍 آدرس سرویس شما:</h2>
+        <div class="info-box">
+            <strong>این یک سرویس DNS over HTTPS (DoH) پیشرفته با قابلیت‌های ضد سانسور است.</strong><br>
+            نسخه‌ی Pro شامل: Parallel DNS Racing، Circuit Breaker Pattern، Geo-based Selection، DNS Padding، ECS Stripping، Negative Caching، Adaptive Timeouts، Enhanced Header Randomization و موارد دیگر.
+        </div>
+
+        <a href="${statsUrl}" class="btn btn-primary stats-link">📊 مشاهده آمار زنده سرورها</a>
+
+        <h2 class="section-title">📍 آدرس سرویس شما</h2>
         <div class="url-container">
             <div class="url-box" id="dohUrl">${workerUrl}</div>
-            <button class="copy-btn" onclick="copyToClipboard('dohUrl')">📋 کپی آدرس</button>
+            <button class="btn btn-primary" data-copy-target="dohUrl">📋 کپی آدرس</button>
         </div>
 
-        <h2>✨ ویژگی‌های پیشرفته:</h2>
-        <div class="feature-grid">
-            <div class="feature-item">
-                <div class="feature-icon">⚡</div>
-                <div class="feature-text">Parallel DNS Racing - همزمان 10 سرور برتر را امتحان می‌کند</div>
+        <section id="features">
+            <h2 class="section-title">✨ ویژگی‌های پیشرفته</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-text">Parallel DNS Racing — همزمان ۱۰ سرور برتر امتحان می‌شود و اولین پاسخ معتبر پذیرفته می‌شود</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-text">Circuit Breaker Pattern — مدیریت خودکار سرورهای ناسالم و قطع موقت آن‌ها</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🌍</div>
+                    <div class="feature-text">Geo-based Selection — انتخاب بهترین سرور بر اساس موقعیت جغرافیایی کاربر</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🧠</div>
+                    <div class="feature-text">یادگیری تطبیقی برای امتیازدهی و انتخاب هوشمندانه‌ی سرورها در طول زمان</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔄</div>
+                    <div class="feature-text">Load Balancing هوشمند بر اساس سرعت پاسخ و قابلیت اطمینان هر سرور</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-text">DNS Padding مطابق RFC 8467 — جلوگیری از تحلیل اندازه‌ی بسته‌ها</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🚫</div>
+                    <div class="feature-text">ECS Stripping — حذف واقعی EDNS Client Subnet از OPT Record</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💾</div>
+                    <div class="feature-text">Smart Caching با مدیریت خودکار حجم و انقضای کش</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⏱️</div>
+                    <div class="feature-text">Adaptive Timeouts — تنظیم خودکار زمان انتظار بر اساس تاریخچه‌ی هر سرور</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔁</div>
+                    <div class="feature-text">Negative Caching — کش هوشمند پاسخ‌های NXDOMAIN</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⚙️</div>
+                    <div class="feature-text">استفاده از بیش از ۱۹۰ سرور DNS معتبر جهانی</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🎭</div>
+                    <div class="feature-text">Enhanced Header Randomization در برابر Fingerprinting سمت provider</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">امتیازدهی پویا: ۳۵٪ سلامت، ۳۰٪ سرعت، ۲۰٪ قابلیت اطمینان، ۱۵٪ منطقه</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔗</div>
+                    <div class="feature-text">Request Coalescing — ادغام درخواست‌های هم‌زمان برای یک کوئری برای کاهش تأخیر</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🌏</div>
+                    <div class="feature-text">پشتیبانی کامل از CORS برای درخواست‌های مرورگر</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📡</div>
+                    <div class="feature-text">پشتیبانی از JSON DoH API با فرمت application/dns-json</div>
+                </div>
             </div>
-            <div class="feature-item">
-                <div class="feature-icon">🛡️</div>
-                <div class="feature-text">Circuit Breaker Pattern - مدیریت خودکار سرورهای ناسالم</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🌍</div>
-                <div class="feature-text">Geo-based Selection - انتخاب بهترین سرور بر اساس موقعیت جغرافیایی</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🧠</div>
-                <div class="feature-text">یادگیری تطبیقی مبتنی بر AI برای انتخاب هوشمند سرورها</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔄</div>
-                <div class="feature-text">Load Balancing هوشمند بر اساس سرعت و قابلیت اطمینان</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔒</div>
-                <div class="feature-text">DNS Padding (RFC 8467) - جلوگیری از Traffic Analysis</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🎯</div>
-                <div class="feature-text">QNAME Minimization - حداقل‌سازی اطلاعات query</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🚫</div>
-                <div class="feature-text">ECS Stripping - حذف EDNS Client Subnet</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">💾</div>
-                <div class="feature-text">Smart LRU Caching - مدیریت هوشمند Cache</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">⏱️</div>
-                <div class="feature-text">Adaptive Timeouts - تنظیم خودکار زمان انتظار</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔄</div>
-                <div class="feature-text">Negative Caching - Cache هوشمند NXDOMAIN</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">⚙️</div>
-                <div class="feature-text">استفاده از بیش از 200 سرور DNS معتبر جهانی</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🎭</div>
-                <div class="feature-text">Enhanced Header Randomization - ضد Fingerprinting</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">📊</div>
-                <div class="feature-text">امتیازدهی پویا: 35% سلامت، 30% سرعت، 20% قابلیت اطمینان، 15% منطقه</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔄</div>
-                <div class="feature-text">Intelligent Fallback در صورت شکست Racing</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🌐</div>
-                <div class="feature-text">بهره‌مندی از ECH در سرورهای Cloudflare</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔗</div>
-                <div class="feature-text">Request Coalescing - ادغام هوشمند درخواست‌های تکراری برای کاهش latency</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🌏</div>
-                <div class="feature-text">CORS Support - پشتیبانی کامل از درخواست‌های مرورگر بدون محدودیت Cross-Origin</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">📡</div>
-                <div class="feature-text">JSON DoH API - پشتیبانی از فرمت application/dns-json برای سازگاری بیشتر</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔐</div>
-                <div class="feature-text">اجرای واقعی RFC 8467 DNS Padding با OPT Record استاندارد</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🧹</div>
-                <div class="feature-text">ECS Stripping پیشرفته - پارس و حذف واقعی EDNS Client Subnet از OPT Record</div>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🎲</div>
-                <div class="feature-text">Decoy Traffic با 20 دامنه متنوع برای مخفی‌سازی الگوی ترافیک DNS</div>
-            </div>
-        </div>
+        </section>
 
-        <h2>🌐 DNS Providers استفاده شده:</h2>
-        <div class="dns-list">
-            <div class="dns-item">بیش از 220 سرور DNS معتبر از کشورهای مختلف با پشتیبانی Geo-location</div>
-            <div class="dns-item">• Cloudflare, Google, Quad9, OpenDNS</div>
-            <div class="dns-item">• AdGuard, NextDNS, Mullvad</div>
-            <div class="dns-item">• AhaDNS (آمریکا، هلند، لهستان، هند، سنگاپور، استرالیا)</div>
-            <div class="dns-item">• BlahDNS (فنلاند، ژاپن، آلمان، سنگاپور)</div>
-            <div class="dns-item">• Pi-DNS (اروپا، آمریکا)</div>
-            <div class="dns-item">• و 60+ سرور دیگر با پوشش جهانی...</div>
-        </div>
+        <section id="providers">
+            <h2 class="section-title">🌐 DNS Providers استفاده‌شده</h2>
+            <div class="provider-grid">
+                <div class="provider-chip"><strong>۱۹۰+</strong> سرور DNS معتبر با پوشش جهانی و انتخاب بر اساس منطقه</div>
+                <div class="provider-chip">Cloudflare، Google، Quad9، OpenDNS</div>
+                <div class="provider-chip">AdGuard، NextDNS، Mullvad</div>
+                <div class="provider-chip">AhaDNS — آمریکا، هلند، لهستان، هند، سنگاپور، استرالیا</div>
+                <div class="provider-chip">BlahDNS — فنلاند، ژاپن، آلمان، سنگاپور</div>
+                <div class="provider-chip">Pi-DNS — اروپا، آمریکا</div>
+                <div class="provider-chip">و ده‌ها سرور دیگر با پوشش جهانی...</div>
+            </div>
+        </section>
 
         <div class="info-box">
-            <strong>✅ این DoH Proxy چه کارهایی انجام می‌دهد:</strong><br><br>
-            • <span class="success-highlight">رمزنگاری کامل درخواست‌های DNS</span> - درخواست‌های شما از طریق HTTPS رمزنگاری می‌شوند<br>
-            • <span class="success-highlight">دور زدن DNS Poisoning</span> - از دستکاری پاسخ‌های DNS جلوگیری می‌کند<br>
-            • <span class="success-highlight">باز کردن وب‌سایت‌های فیلتر شده با DNS</span> - اگر سایتی فقط در لایه DNS مسدود شده باشد، با این DoH قابل دسترسی می‌شود<br>
-            • <span class="success-highlight">افزایش حریم خصوصی</span> - ISP نمی‌تواند ببیند به چه دامنه‌هایی Query می‌زنید<br>
-            • <span class="success-highlight">بهبود امنیت</span> - از حملات Man-in-the-Middle در لایه DNS جلوگیری می‌کند<br>
-            • <span class="success-highlight">سرعت بالاتر</span> - با Racing Mode، Circuit Breaker و Smart Caching سرعت بهینه را دریافت می‌کنید
+            <strong>✅ این DoH Proxy چه کارهایی انجام می‌دهد</strong><br><br>
+            • <span class="success-highlight">رمزنگاری کامل درخواست‌های DNS</span> از طریق HTTPS<br>
+            • <span class="success-highlight">دور زدن DNS Poisoning</span> و جلوگیری از دستکاری پاسخ‌های DNS<br>
+            • <span class="success-highlight">باز کردن سایت‌های فیلتر شده در لایه‌ی DNS</span><br>
+            • <span class="success-highlight">افزایش حریم خصوصی</span> — ISP نمی‌تواند ببیند به چه دامنه‌هایی کوئری می‌زنید<br>
+            • <span class="success-highlight">جلوگیری از Man-in-the-Middle</span> در لایه‌ی DNS<br>
+            • <span class="success-highlight">سرعت بالاتر</span> با Racing Mode، Circuit Breaker و Smart Caching
         </div>
 
-        <div class="warning-box">
-            <strong>💡 درک انواع فیلترینگ:</strong><br><br>
-            فیلترینگ در شبکه در لایه‌های مختلف انجام می‌شود:<br><br>
-            
-            <strong>1. DNS Filtering (فیلترینگ DNS):</strong><br>
-            • سایت در سطح DNS مسدود می‌شود<br>
-            • <span class="success-highlight">✓ این DoH Proxy این نوع فیلترینگ را دور می‌زند</span><br>
-            • مثال: بسیاری از وب‌سایت‌ها در کشورهای مختلف<br><br>
-            
-            <strong>2. SNI Filtering (فیلترینگ SNI):</strong><br>
-            • سایت بر اساس Server Name Indication مسدود می‌شود<br>
-            • ✗ این DoH به تنهایی کافی نیست (نیاز به ECH یا ابزار اضافی)<br><br>
-            
-            <strong>3. IP Blocking (مسدودسازی IP):</strong><br>
-            • آدرس IP سرور مستقیماً مسدود می‌شود<br>
-            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN)<br><br>
-            
-            <strong>4. Deep Packet Inspection - DPI:</strong><br>
-            • بررسی عمیق محتوای بسته‌های شبکه<br>
-            • ✗ این DoH به تنهایی کافی نیست (نیاز به VPN یا پروکسی پیشرفته)<br><br>
-            
-            <strong>نتیجه:</strong> اگر سایت مورد نظر شما فقط با DNS فیلتر شده، این DoH کافی است. اگر از روش‌های دیگر فیلتر شده، به VPN نیاز دارید.
+        <div class="warning-box" id="security">
+            <strong>💡 درک انواع فیلترینگ</strong><br><br>
+            فیلترینگ شبکه معمولاً در چند لایه‌ی مستقل انجام می‌شود؛ هرکدام راه‌حل خودشان را دارند:
+            <table class="filter-table">
+                <thead>
+                    <tr><th>لایه‌ی فیلترینگ</th><th>توضیح</th><th>این DoH کافی است؟</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>DNS Filtering</td>
+                        <td>سایت در سطح پاسخ DNS مسدود یا جعل می‌شود</td>
+                        <td><span class="tag tag-yes">✓ بله</span></td>
+                    </tr>
+                    <tr>
+                        <td>SNI Filtering</td>
+                        <td>اتصال بر اساس نام دامنه در TLS ClientHello شناسایی و مسدود می‌شود</td>
+                        <td><span class="tag tag-no">✗ خیر — نیاز به ECH یا Fragment</span></td>
+                    </tr>
+                    <tr>
+                        <td>IP Blocking</td>
+                        <td>آدرس IP مقصد مستقیماً مسدود می‌شود</td>
+                        <td><span class="tag tag-no">✗ خیر — نیاز به VPN/Proxy</span></td>
+                    </tr>
+                    <tr>
+                        <td>Deep Packet Inspection</td>
+                        <td>بررسی الگوی بسته‌ها فارغ از DNS یا SNI</td>
+                        <td><span class="tag tag-no">✗ خیر — نیاز به VPN/Proxy پیشرفته</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <strong>نتیجه:</strong> اگر سایت مورد نظر فقط از طریق DNS فیلتر شده، همین DoH کافی است. برای فیلترینگ‌های پیشرفته‌تر (SNI/IP/DPI)، این DoH را همراه با کانفیگ Fragment یا VPN استفاده کنید — این دو در لایه‌های متفاوتی از شبکه عمل می‌کنند و مکمل هم هستند، نه جایگزین هم.
         </div>
 
-        <h2>📱 نحوه استفاده:</h2>
-        
-        <div class="usage-card">
-            <h3>🌐 مرورگرها (Firefox, Chrome, Edge, Brave)</h3>
-            <p>بروید به تنظیمات مرورگر → بخش Privacy یا Security → DNS over HTTPS → انتخاب Custom Provider و آدرس بالا را وارد کنید.</p>
-            <p><strong>فعال‌سازی ECH در Firefox:</strong><br>
-            1. در آدرس‌بار تایپ کنید: about:config<br>
-            2. جستجو کنید: network.dns.echconfig.enabled<br>
-            3. مقدار را روی true قرار دهید</p>
-            <p>با این تنظیمات، بسیاری از سایت‌های فیلتر شده با DNS قابل دسترسی می‌شوند.</p>
-        </div>
+        <section id="setup">
+            <h2 class="section-title">📱 نحوه استفاده</h2>
 
-        <div class="usage-card">
-            <h3>📱 اپلیکیشن Intra (اندروید)</h3>
-            <p>1. اپلیکیشن Intra را از Google Play نصب کنید<br>
-            2. اپلیکیشن را باز کنید<br>
-            3. روی گزینه "Configure custom server URL" بزنید<br>
-            4. آدرس زیر را در قسمت Custom DNS over HTTPS server URL وارد کنید:</p>
-            <div class="url-container">
-                <div class="url-box">${workerUrl}</div>
+            <div class="usage-card">
+                <h3 class="card-title">🌐 مرورگرها (Firefox, Chrome, Edge, Brave)</h3>
+                <p>بروید به تنظیمات مرورگر ← بخش Privacy یا Security ← DNS over HTTPS ← انتخاب Custom Provider و آدرس بالا را وارد کنید.</p>
+                <p><strong>فعال‌سازی ECH در Firefox:</strong></p>
+                <p>۱. در آدرس‌بار تایپ کنید: <span class="inline-code">about:config</span><br>
+                ۲. جستجو کنید: <span class="inline-code">network.dns.echconfig.enabled</span><br>
+                ۳. مقدار را روی true قرار دهید</p>
+                <p>با این تنظیمات، بسیاری از سایت‌های فیلتر شده با DNS قابل دسترسی می‌شوند.</p>
             </div>
-            <p>5. دکمه ON را فعال کنید</p>
-            <p>این تنظیم DNS شما را رمزنگاری می‌کند و سایت‌هایی که فقط با DNS فیلتر شده‌اند را باز می‌کند.</p>
-        </div>
 
-        <div class="usage-card">
-            <h3>🍎 iOS, iPadOS و macOS</h3>
-            <p>برای استفاده در دستگاه‌های اپل، کافی است پروفایل شخصی خود را دانلود و نصب کنید:</p>
-            <a href="${appleProfileUrl}" class="download-btn">🍎 دانلود پروفایل iOS/macOS</a>
-            <br><br>
-            <p><strong>نحوه نصب:</strong><br>
-            • <strong>iOS/iPadOS:</strong> فایل را با Safari دانلود کنید → Settings → General → VPN, DNS & Device Management → Downloaded Profile → Install<br>
-            • <strong>macOS:</strong> فایل را دانلود کنید → System Settings → Privacy & Security → Profiles → نصب پروفایل</p>
-            <p>پس از نصب، DNS همه اپلیکیشن‌های شما رمزنگاری می‌شود.</p>
-        </div>
+            <div class="usage-card">
+                <h3 class="card-title">📱 اپلیکیشن Intra (اندروید)</h3>
+                <p>۱. اپلیکیشن Intra را از Google Play نصب کنید<br>
+                ۲. اپلیکیشن را باز کنید<br>
+                ۳. روی گزینه‌ی «Configure custom server URL» بزنید<br>
+                ۴. آدرس زیر را در قسمت Custom DNS over HTTPS server URL وارد کنید:</p>
+                <div class="url-container">
+                    <div class="url-box">${workerUrl}</div>
+                </div>
+                <p>۵. دکمه‌ی ON را فعال کنید</p>
+                <p>این تنظیم DNS شما را رمزنگاری می‌کند و سایت‌هایی که فقط با DNS فیلتر شده‌اند را باز می‌کند.</p>
+            </div>
 
-        <div class="usage-card">
-            <h3>🔧 کلاینت‌های Xray - کانفیگ ساده (v2rayNG و مشابه)</h3>
-            <p>برای استفاده در کلاینت‌های مبتنی بر Xray، می‌توانید از کانفیگ زیر استفاده کنید:</p>
-            <div class="code-box" id="xrayConfig">{
+            <div class="usage-card">
+                <h3 class="card-title">🍎 iOS، iPadOS و macOS</h3>
+                <p>برای استفاده در دستگاه‌های اپل، پروفایل شخصی خود را دانلود و نصب کنید:</p>
+                <a href="${appleProfileUrl}" class="btn btn-purple">🍎 دانلود پروفایل iOS/macOS</a>
+                <p style="margin-top: 14px;"><strong>نحوه نصب:</strong></p>
+                <p>• <strong>iOS/iPadOS:</strong> فایل را با Safari دانلود کنید ← Settings ← General ← VPN, DNS & Device Management ← Downloaded Profile ← Install<br>
+                • <strong>macOS:</strong> فایل را دانلود کنید ← System Settings ← Privacy &amp; Security ← Profiles ← نصب پروفایل</p>
+                <p>پس از نصب، DNS همه‌ی اپلیکیشن‌های شما رمزنگاری می‌شود.</p>
+            </div>
+
+            <div class="usage-card">
+                <h3 class="card-title">💻 ویندوز ۱۰/۱۱</h3>
+                <p>Settings ← Network &amp; Internet ← Properties ← DNS server assignment ← Edit ← Preferred DNS encryption: Encrypted only (DNS over HTTPS) و آدرس بالا را وارد کنید.</p>
+            </div>
+
+            <div class="usage-card">
+                <h3 class="card-title">🐧 لینوکس (systemd-resolved)</h3>
+                <p>۱. ویرایش فایل تنظیمات:</p>
+                <code class="block-code">sudo nano /etc/systemd/resolved.conf</code>
+                <p>۲. اضافه کردن این خطوط:</p>
+                <code class="block-code">[Resolve]<br>DNS=${workerUrl}<br>DNSOverTLS=yes</code>
+                <p>۳. ری‌استارت سرویس:</p>
+                <code class="block-code">sudo systemctl restart systemd-resolved</code>
+            </div>
+
+            <div class="usage-card">
+                <h3 class="card-title">🔧 روتر</h3>
+                <p>بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید. با تنظیم DoH در روتر، تمام دستگاه‌های متصل به شبکه از DNS رمزنگاری‌شده استفاده می‌کنند.</p>
+            </div>
+        </section>
+
+        <section id="configs">
+            <h2 class="section-title">🔧 کانفیگ‌های Xray</h2>
+
+            <div class="usage-card">
+                <h3 class="card-title">کانفیگ ساده (v2rayNG و مشابه)</h3>
+                <p>برای استفاده در کلاینت‌های مبتنی بر Xray، می‌توانید از کانفیگ زیر استفاده کنید:</p>
+                <div class="code-viewer">
+                    <div class="code-viewer-header">
+                        <span class="code-viewer-filename"><span class="lang-dot"></span>doh-proxy-simple.json</span>
+                        <button class="btn" data-copy-target="xrayConfig">📋 کپی</button>
+                    </div>
+                    <div class="code-viewer-body">
+                        <div class="code-box" id="xrayConfig" data-lang="json">{
   "remarks": "🛡️ DoH Proxy Pro",
   "dns": {
     "servers": [
@@ -2046,15 +2316,21 @@ async function handleRequest(request) {
     ]
   }
 }</div>
-            <button class="copy-btn" onclick="copyToClipboard('xrayConfig')">📋 کپی کانفیگ Xray</button>
-            <br><br>
-            <p><strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند و سایت‌های فیلتر شده با DNS را باز می‌کند.</p>
-        </div>
+                    </div>
+                </div>
+                <p><strong>نکته:</strong> این کانفیگ DNS شما را امن می‌کند و سایت‌های فیلتر شده با DNS را باز می‌کند.</p>
+            </div>
 
-        <div class="usage-card">
-            <h3>🚀 کلاینت‌های Xray - کانفیگ پیشرفته با Fragment (توصیه می‌شود)</h3>
-            <p>این کانفیگ علاوه بر DoH دارای قابلیت Fragment است که به دور زدن فیلترینگ‌های پیشرفته‌تر کمک می‌کند:</p>
-            <div class="code-box" id="xrayFragmentConfig">{
+            <div class="usage-card">
+                <h3 class="card-title">کانفیگ پیشرفته با Fragment (توصیه می‌شود)</h3>
+                <p>این کانفیگ علاوه بر DoH دارای قابلیت Fragment است که در لایه‌ی TCP/TLS به دور زدن فیلترینگ‌های SNI-based کمک می‌کند:</p>
+                <div class="code-viewer">
+                    <div class="code-viewer-header">
+                        <span class="code-viewer-filename"><span class="lang-dot"></span>doh-proxy-fragment.json</span>
+                        <button class="btn" data-copy-target="xrayFragmentConfig">📋 کپی</button>
+                    </div>
+                    <div class="code-viewer-body">
+                        <div class="code-box" id="xrayFragmentConfig" data-lang="json">{
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "log": {
     "access": "",
@@ -2239,49 +2515,28 @@ async function handleRequest(request) {
   },
   "stats": {}
 }</div>
-            <button class="copy-btn" onclick="copyToClipboard('xrayFragmentConfig')">📋 کپی کانفیگ Fragment</button>
-            <br><br>
-            <p><strong>مزایای کانفیگ Fragment:</strong><br>
-            • قابلیت Fragment برای دور زدن DPI<br>
-            • تکه‌تکه کردن بسته‌های TLS Hello<br>
-            • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته</p>
-        </div>
+                    </div>
+                </div>
+                <p><strong>مزایای کانفیگ Fragment:</strong></p>
+                <p>• تکه‌تکه کردن بسته‌ی TLS ClientHello برای دور زدن DPI<br>
+                • مکمل DoH؛ روی لایه‌ی متفاوتی از شبکه عمل می‌کند<br>
+                • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته‌تر</p>
+            </div>
+        </section>
 
-
-        <div class="usage-card">
-            <h3>💻 ویندوز 10/11</h3>
-            <p>Settings → Network & Internet → Properties → DNS server assignment → Edit → Preferred DNS encryption: Encrypted only (DNS over HTTPS) و آدرس بالا را وارد کنید.</p>
-        </div>
-
-        <div class="usage-card">
-            <h3>🐧 لینوکس</h3>
-            <p><strong>استفاده از systemd-resolved:</strong><br>
-            1. ویرایش فایل تنظیمات:<br>
-            <code style="background: #0d1117; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo nano /etc/systemd/resolved.conf</code></p>
-            <p>2. اضافه کردن این خطوط:<br>
-            <code style="background: #0d1117; padding: 10px; border-radius: 4px; display: block; margin: 10px 0;">[Resolve]<br>DNS=${workerUrl}<br>DNSOverTLS=yes</code></p>
-            <p>3. ری‌استارت سرویس:<br>
-            <code style="background: #0d1117; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px 0;">sudo systemctl restart systemd-resolved</code></p>
-        </div>
-
-        <div class="usage-card">
-            <h3>🔧 روتر</h3>
-            <p>بسته به مدل روتر، ممکن است پشتیبانی از DoH داشته باشد. به تنظیمات DNS روتر خود مراجعه کنید. با تنظیم DoH در روتر، تمام دستگاه‌های متصل به شبکه از DNS رمزنگاری شده استفاده می‌کنند.</p>
-        </div>
-
-        <h2>🛡️ توصیه‌های امنیتی:</h2>
+        <h2 class="section-title">🛡️ توصیه‌های امنیتی</h2>
         <div class="info-box">
             <strong>برای حداکثر امنیت و دسترسی:</strong><br><br>
-            <strong>سناریو 1 - فقط فیلترینگ DNS:</strong><br>
+            <strong>سناریو ۱ — فقط فیلترینگ DNS:</strong><br>
             ✓ از این DoH Proxy استفاده کنید<br>
             ✓ بسیاری از سایت‌ها قابل دسترسی می‌شوند<br><br>
-            
-            <strong>سناریو 2 - فیلترینگ پیشرفته‌تر:</strong><br>
+
+            <strong>سناریو ۲ — فیلترینگ پیشرفته‌تر:</strong><br>
             ✓ از این DoH Proxy استفاده کنید<br>
             ✓ ECH را در مرورگر فعال کنید<br>
             ✓ از کانفیگ Fragment در Xray استفاده کنید<br>
-            ✓ از VPN برای لایه‌های دیگر استفاده کنید<br><br>
-            
+            ✓ برای لایه‌های دیگر از VPN استفاده کنید<br><br>
+
             <strong>نکات عمومی:</strong><br>
             • از مرورگرهای به‌روز استفاده کنید<br>
             • HTTPS را همیشه فعال نگه دارید<br>
@@ -2289,93 +2544,146 @@ async function handleRequest(request) {
             • رمزهای عبور قوی استفاده کنید
         </div>
 
-        <h2>❓ سوالات متداول:</h2>
-        <div class="info-box">
-            <strong>Q: آیا با این DoH می‌توانم به سایت‌های فیلتر شده دسترسی داشته باشم؟</strong><br>
-            A: بله، اگر سایت فقط با DNS فیلتر شده باشد. اگر از روش‌های دیگر (IP blocking, DPI) فیلتر شده، به VPN نیاز دارید.<br><br>
-            
-            <strong>Q: Fragment چیست و چه کمکی می‌کند؟</strong><br>
-            A: Fragment یک تکنیک ضد فیلترینگ است که بسته‌های TLS Hello را تکه‌تکه می‌کند و از شناسایی توسط DPI جلوگیری می‌کند. استفاده از کانفیگ Fragment در کنار DoH می‌تواند به دور زدن فیلترینگ‌های پیشرفته‌تر کمک کند.<br><br>
-            
-            <strong>Q: ECH چیست و چگونه کمک می‌کند؟</strong><br>
-            A: ECH یا Encrypted Client Hello تکنیکی است که SNI را رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر و هم سرور از آن پشتیبانی کنند.<br><br>
-            
-            <strong>Q: این DoH چه تفاوتی با 1.1.1.1 دارد؟</strong><br>
-            A: این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و تکنیک‌های پیشرفته ضد سانسور دارد (Parallel Racing با 10 سرور، Circuit Breaker، Geo-selection، یادگیری تطبیقی، DNS Padding، QNAME Minimization، Negative Caching، Adaptive Timeouts و 15+ قابلیت دیگر). در نهایت از همان سرورهای DNS معتبر استفاده می‌کند ولی با قابلیت‌های بسیار بیشتر.<br><br>
-            
-            <strong>Q: آیا این سرویس رایگان است؟</strong><br>
-            A: بله، اگر در محدوده رایگان Cloudflare Workers باشید (100,000 request در روز) کاملاً رایگان است.<br><br>
-            
-            <strong>Q: آیا استفاده از این DoH سرعت را کاهش می‌دهد؟</strong><br>
-            A: خیر، بلکه ممکن است سرعت را بهبود بخشد چون از Cache هوشمند استفاده می‌کند و با Racing Mode اولین پاسخ سریع را دریافت می‌کنید.<br><br>
-            
-            <strong>Q: چه تفاوتی بین کانفیگ ساده و کانفیگ Fragment وجود دارد؟</strong><br>
-            A: کانفیگ ساده فقط DoH را فعال می‌کند و برای دور زدن فیلترینگ DNS کافی است. کانفیگ Fragment علاوه بر DoH، قابلیت Fragment را هم دارد که به دور زدن فیلترینگ‌های پیشرفته‌تر (DPI) کمک می‌کند. برای حداکثر امنیت، استفاده از کانفیگ Fragment توصیه می‌شود.<br><br>
-            
-            <strong>Q: آیا کسی می‌تواند ببیند من از این سرویس استفاده می‌کنم؟</strong><br>
-            A: درخواست‌های DNS شما رمزنگاری شده و ISP نمی‌تواند محتوای آن‌ها را ببیند. فقط می‌تواند ببیند که به سرور Cloudflare متصل هستید.<br><br>
-            
-            <strong>Q: تکنولوژی Parallel Racing چگونه کار می‌کند؟</strong><br>
-            A: این سیستم همزمان به 10 سرور DNS برتر (با امتیازدهی بر اساس منطقه جغرافیایی، سرعت، سلامت و قابلیت اطمینان) درخواست می‌فرستد و اولین پاسخ سریع را قبول می‌کند. این باعث کاهش latency و افزایش قابلیت اطمینان می‌شود.<br><br>
-            
-            <strong>Q: Request Coalescing چیست؟</strong><br>
-            A: وقتی چند کاربر یا برنامه در یک لحظه برای یک دامنه یکسان Query می‌زنند، به جای ارسال چند درخواست جداگانه به upstream، Worker یک درخواست ارسال می‌کند و پاسخ را بین همه به اشتراک می‌گذارد. این باعث کاهش بار سرور و کاهش latency می‌شود.<br><br>
-            
-        </div>
+        <section id="faq">
+            <h2 class="section-title">❓ سوالات متداول</h2>
+
+            <details class="faq-item">
+                <summary>آیا با این DoH می‌توانم به سایت‌های فیلتر شده دسترسی داشته باشم؟</summary>
+                <div class="faq-answer">بله، اگر سایت فقط با DNS فیلتر شده باشد. اگر از روش‌های دیگر (IP blocking، DPI، SNI) فیلتر شده، به Fragment یا VPN هم نیاز دارید.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Fragment چیست و چه کمکی می‌کند؟</summary>
+                <div class="faq-answer">Fragment یک تکنیک ضد فیلترینگ است که بسته‌ی TLS ClientHello را در سطح TCP تکه‌تکه می‌کند تا DPI نتواند نام دامنه (SNI) را در یک بسته کامل ببیند. این تکنیک روی خودِ اتصال به مقصد اجرا می‌شود، نه روی DNS، و برای همین مکمل DoH است نه جایگزین آن.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>ECH چیست و چگونه کمک می‌کند؟</summary>
+                <div class="faq-answer">Encrypted Client Hello نام دامنه (SNI) را در حین TLS Handshake رمزنگاری می‌کند و از فیلترینگ مبتنی بر SNI جلوگیری می‌کند. برای استفاده باید هم مرورگر یا کلاینت و هم سرور مقصد از آن پشتیبانی کنند.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>این DoH چه تفاوتی با 1.1.1.1 دارد؟</summary>
+                <div class="faq-answer">این DoH Proxy شخصی شماست که روی Cloudflare Worker اجرا می‌شود و به‌جای اتکا به یک provider، همزمان به ۱۰ سرور DNS برتر درخواست می‌فرستد (Parallel Racing)، سرورهای ناسالم را با Circuit Breaker کنار می‌گذارد، بر اساس موقعیت جغرافیایی بهترین سرور را انتخاب می‌کند و نتایج را کش هوشمند می‌کند. در نهایت از همان provider های معتبر استفاده می‌کند اما با لایه‌ای از قابلیت اطمینان و سرعت بیشتر.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>آیا این سرویس رایگان است؟</summary>
+                <div class="faq-answer">بله، در محدوده‌ی رایگان Cloudflare Workers (۱۰۰,۰۰۰ درخواست در روز) کاملاً رایگان است.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>آیا استفاده از این DoH سرعت را کاهش می‌دهد؟</summary>
+                <div class="faq-answer">خیر؛ با Cache هوشمند و Racing Mode معمولاً سریع‌ترین پاسخ ممکن را دریافت می‌کنید.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>چه تفاوتی بین کانفیگ ساده و کانفیگ Fragment وجود دارد؟</summary>
+                <div class="faq-answer">کانفیگ ساده فقط DoH را فعال می‌کند و برای دور زدن فیلترینگ در لایه‌ی DNS کافی است. کانفیگ Fragment علاوه بر DoH، بسته‌های TLS ClientHello را هم تکه‌تکه می‌کند که به دور زدن فیلترینگ‌های پیشرفته‌تر (SNI/DPI) کمک می‌کند. برای حداکثر دسترسی، کانفیگ Fragment توصیه می‌شود.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>آیا کسی می‌تواند ببیند من از این سرویس استفاده می‌کنم؟</summary>
+                <div class="faq-answer">درخواست‌های DNS شما رمزنگاری‌شده هستند و ISP نمی‌تواند محتوای آن‌ها را ببیند؛ فقط می‌تواند ببیند که به یک سرور Cloudflare متصل هستید.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Parallel Racing چگونه کار می‌کند؟</summary>
+                <div class="faq-answer">این سیستم هم‌زمان به ۱۰ سرور DNS برتر (بر اساس امتیازدهی منطقه، سرعت، سلامت و قابلیت اطمینان) درخواست می‌فرستد و اولین پاسخ معتبر را می‌پذیرد. این کار تأخیر را کاهش و قابلیت اطمینان را افزایش می‌دهد.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>Request Coalescing چیست؟</summary>
+                <div class="faq-answer">وقتی چند کاربر یا برنامه هم‌زمان برای یک دامنه‌ی یکسان کوئری می‌زنند، به‌جای ارسال چند درخواست جداگانه به provider بالادستی، Worker فقط یک درخواست می‌فرستد و پاسخ را بین همه به اشتراک می‌گذارد. این باعث کاهش بار سرور و کاهش تأخیر می‌شود.</div>
+            </details>
+        </section>
 
         <div class="footer">
             <p>Designed by: <a href="https://t.me/An0nymou3Bot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
-            <p style="margin-top: 10px; font-size: 0.9em; color: #6e7681;">Enhanced Anti-Censorship Version with Parallel Racing Technology</p>
+            <p class="footer-sub">Enhanced Anti-Censorship Version with Parallel Racing Technology</p>
         </div>
     </div>
 
     <script>
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const text = element.textContent;
-            const btn = event.target;
-            const originalHTML = btn.innerHTML;
-            
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    btn.classList.add('copied');
-                    btn.innerHTML = '✓ کپی شد!';
-                    setTimeout(() => {
-                        btn.classList.remove('copied');
-                        btn.innerHTML = originalHTML;
-                    }, 2000);
-                }).catch(() => {
-                    fallbackCopy(text, btn, originalHTML);
-                });
-            } else {
-                fallbackCopy(text, btn, originalHTML);
-            }
-        }
-        
-        function fallbackCopy(text, btn, originalHTML) {
+        function fallbackCopy(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
             textArea.style.left = '-999999px';
             document.body.appendChild(textArea);
             textArea.select();
-            
             try {
                 document.execCommand('copy');
+            } catch (err) {}
+            document.body.removeChild(textArea);
+        }
+
+        function copyToClipboard(elementId, btn) {
+            const element = document.getElementById(elementId);
+            const text = element.getAttribute('data-raw') || element.textContent;
+            const originalHTML = btn.innerHTML;
+
+            const onDone = () => {
                 btn.classList.add('copied');
                 btn.innerHTML = '✓ کپی شد!';
                 setTimeout(() => {
                     btn.classList.remove('copied');
                     btn.innerHTML = originalHTML;
                 }, 2000);
-            } catch (err) {
-                btn.innerHTML = '❌ خطا در کپی';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 2000);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onDone).catch(() => {
+                    fallbackCopy(text);
+                    onDone();
+                });
+            } else {
+                fallbackCopy(text);
+                onDone();
             }
-            document.body.removeChild(textArea);
         }
+
+        document.addEventListener('click', function (event) {
+            const btn = event.target.closest('[data-copy-target]');
+            if (!btn) return;
+            copyToClipboard(btn.getAttribute('data-copy-target'), btn);
+        });
+
+        function highlightJSONLine(line) {
+            const escaped = line
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return escaped.replace(
+                /("[^"]*"(\\s*:)?|\\btrue\\b|\\bfalse\\b|\\bnull\\b|-?\\d+(?:\\.\\d+)?)/g,
+                function (match) {
+                    let cls = 'jn';
+                    if (/^"/.test(match)) {
+                        cls = /:$/.test(match) ? 'jk' : 'js';
+                    } else if (/^(true|false)$/.test(match)) {
+                        cls = 'jb';
+                    } else if (/^null$/.test(match)) {
+                        cls = 'jz';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                }
+            );
+        }
+
+        function enhanceCodeBlocks() {
+            document.querySelectorAll('.code-box[data-lang="json"]').forEach(function (box) {
+                const raw = box.textContent.replace(/\\n$/, '');
+                const lines = raw.split('\\n');
+                const rows = lines.map(function (line, i) {
+                    return '<div class="code-line"><span class="code-gutter">' + (i + 1) +
+                        '</span><span class="code-content">' + (highlightJSONLine(line) || ' ') + '</span></div>';
+                });
+                box.setAttribute('data-raw', raw);
+                box.innerHTML = rows.join('');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', enhanceCodeBlocks);
     </script>
 </body>
 </html>`;
