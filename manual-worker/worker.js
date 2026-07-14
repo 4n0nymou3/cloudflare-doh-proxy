@@ -2599,7 +2599,7 @@ async function handleRequest(request) {
         </section>
 
         <div class="footer">
-            <p>Designed by: <a href="https://t.me/An0nymou3Bot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
+            <p>Engineered by: <a href="https://t.me/An0nymou3Bot" target="_blank" rel="noopener noreferrer">Anonymous</a></p>
             <p class="footer-sub">Enhanced Anti-Censorship Version with Parallel Racing Technology</p>
         </div>
     </div>
