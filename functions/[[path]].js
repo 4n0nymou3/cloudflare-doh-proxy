@@ -1131,7 +1131,7 @@ function generateAppleProfile(requestUrl) {
     <key>PayloadDescription</key>
     <string>This profile enables encrypted DNS (DNS over HTTPS) on iOS, iPadOS, and macOS devices using your personal DoH Proxy.
     
-Designed by: Anonymous</string>
+Engineered by: Anonymous</string>
     <key>PayloadDisplayName</key>
     <string>Anonymous DoH Proxy - ${hostname}</string>
     <key>PayloadIdentifier</key>
