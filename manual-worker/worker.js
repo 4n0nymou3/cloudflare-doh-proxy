@@ -2393,10 +2393,10 @@ async function handleRequest(request) {
       "settings": {
         "domainStrategy": "UseIP",
         "fragment": {
-          "packets": "1-1",
-          "length": "1",
-          "interval": "13",
-          "maxSplit": "163"
+          "packets": "tlshello",
+          "length": "10-20",
+          "interval": "10-20",
+          "maxSplit": "0"
         }
       },
       "streamSettings": {
