@@ -3054,8 +3054,8 @@ async function handleRequest(request) {
                 const response = await fetch(FRAGMENT_CONFIG_SOURCE, { cache: 'no-store' });
                 if (!response.ok) return;
                 let text = await response.text();
-                text = text.split('${workerUrl}').join(WORKER_URL);
-                text = text.split('${workerHost}').join(WORKER_HOST);
+                text = text.split('\${workerUrl}').join(WORKER_URL);
+                text = text.split('\${workerHost}').join(WORKER_HOST);
                 JSON.parse(text);
                 const raw = text.trim();
                 const lines = raw.split(String.fromCharCode(10));
