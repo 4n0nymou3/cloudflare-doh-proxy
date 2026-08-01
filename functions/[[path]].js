@@ -2333,7 +2333,7 @@ async function handleRequest(request) {
                         <div class="code-box" id="xrayFragmentConfig" data-lang="json">{
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "version": {
-    "min": "26.6.27"
+    "min": "26.7.28"
   },
   "log": {
     "loglevel": "warning",
@@ -2364,7 +2364,9 @@ async function handleRequest(request) {
     },
     "servers": [
       {
-        "address": "${workerUrl}"
+        "tag": "doh-proxy",
+        "address": "${workerUrl}",
+        "timeoutMs": 8000
       },
       {
         "address": "fakedns",
@@ -2372,6 +2374,15 @@ async function handleRequest(request) {
           "domain:ir",
           "geosite:private",
           "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust",
           "full:challenges.cloudflare.com"
         ]
       },
@@ -2387,6 +2398,15 @@ async function handleRequest(request) {
           "domain:ir",
           "geosite:private",
           "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust",
           "full:challenges.cloudflare.com"
         ],
         "finalQuery": true
@@ -2500,6 +2520,7 @@ async function handleRequest(request) {
                   "1",
                   "1",
                   "1",
+                  "1",
                   "400",
                   "1"
                 ],
@@ -2577,6 +2598,7 @@ async function handleRequest(request) {
                   "1",
                   "1",
                   "1",
+                  "1",
                   "400",
                   "1"
                 ],
@@ -2593,6 +2615,127 @@ async function handleRequest(request) {
             "interleave": 2,
             "maxConcurrentTry": 20
           }
+        }
+      }
+    },
+    {
+      "tag": "udp-noises",
+      "protocol": "direct",
+      "settings": {
+        "targetStrategy": "ForceIPv6v4"
+      },
+      "streamSettings": {
+        "finalmask": {
+          "udp": [
+            {
+              "type": "noise",
+              "settings": {
+                "reset": "28",
+                "noise": [
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  }
+                ]
+              }
+            }
+          ]
         }
       }
     }
@@ -2616,7 +2759,16 @@ async function handleRequest(request) {
         "domain": [
           "domain:ir",
           "geosite:private",
-          "geosite:category-ir"
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust"
         ]
       },
       {
@@ -2625,7 +2777,16 @@ async function handleRequest(request) {
         "domain": [
           "domain:ir",
           "geosite:private",
-          "geosite:category-ir"
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust"
         ]
       },
       {
@@ -2672,7 +2833,7 @@ async function handleRequest(request) {
         ]
       },
       {
-        "outboundTag": "udp-direct",
+        "outboundTag": "udp-noises",
         "network": "udp",
         "ip": [
           "0.0.0.0/0",
@@ -2882,7 +3043,37 @@ async function handleRequest(request) {
             });
         }
 
-        document.addEventListener('DOMContentLoaded', enhanceCodeBlocks);
+        const WORKER_URL = "${workerUrl}";
+        const WORKER_HOST = "${workerHost}";
+        const FRAGMENT_CONFIG_SOURCE = 'https://raw.githubusercontent.com/4n0nymou3/cloudflare-doh-proxy/main/configs/doh-proxy-fragment.template.json';
+
+        async function loadDynamicFragmentConfig() {
+            const box = document.getElementById('xrayFragmentConfig');
+            if (!box) return;
+            try {
+                const response = await fetch(FRAGMENT_CONFIG_SOURCE, { cache: 'no-store' });
+                if (!response.ok) return;
+                let text = await response.text();
+                text = text.split('${workerUrl}').join(WORKER_URL);
+                text = text.split('${workerHost}').join(WORKER_HOST);
+                JSON.parse(text);
+                const raw = text.trim();
+                const lines = raw.split(String.fromCharCode(10));
+                const rows = lines.map(function (line, i) {
+                    return '<div class="code-line"><span class="code-gutter">' + (i + 1) +
+                        '</span><span class="code-content">' + (highlightJSONLine(line) || ' ') + '</span></div>';
+                });
+                box.setAttribute('data-raw', raw);
+                box.innerHTML = rows.join('');
+            } catch (err) {
+                console.warn('Fragment config auto-update skipped; using bundled default.', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            enhanceCodeBlocks();
+            loadDynamicFragmentConfig();
+        });
     </script>
 </body>
 </html>`;
