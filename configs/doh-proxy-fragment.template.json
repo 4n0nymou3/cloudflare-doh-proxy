@@ -1,7 +1,7 @@
 {
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "version": {
-    "min": "26.7.28"
+    "min": "26.9.9"
   },
   "log": {
     "loglevel": "warning",
