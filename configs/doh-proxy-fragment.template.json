@@ -1,7 +1,7 @@
 {
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "version": {
-    "min": "26.9.9"
+    "min": "26.6.27"
   },
   "log": {
     "loglevel": "warning",
@@ -119,8 +119,8 @@
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
             "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 2,
+            "prioritizeIPv6": false,
+            "interleave": 4,
             "maxConcurrentTry": 20
           }
         }
@@ -129,8 +129,10 @@
     {
       "tag": "udp-direct",
       "protocol": "direct",
-      "settings": {
-        "targetStrategy": "ForceIPv6v4"
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4v6"
+        }
       }
     },
     {
@@ -154,8 +156,7 @@
                   "1"
                 ],
                 "delays": [
-                  "1",
-                  null
+                  "1"
                 ],
                 "maxSplit": "201"
               }
@@ -166,8 +167,8 @@
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
             "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 2,
+            "prioritizeIPv6": false,
+            "interleave": 4,
             "maxConcurrentTry": 20
           }
         }
@@ -222,8 +223,8 @@
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
             "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 2,
+            "prioritizeIPv6": false,
+            "interleave": 4,
             "maxConcurrentTry": 20
           }
         }
@@ -232,10 +233,10 @@
     {
       "tag": "udp-noises",
       "protocol": "direct",
-      "settings": {
-        "targetStrategy": "ForceIPv6v4"
-      },
       "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4v6"
+        },
         "finalmask": {
           "udp": [
             {
