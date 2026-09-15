@@ -6,23 +6,35 @@ on:
       - main
     paths:
       - "configs/fragment-draft.json"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: fragment-config-publish
+  cancel-in-progress: false
+
 jobs:
   sanitize-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Validate sanitizer syntax
+        run: node --check .github/scripts/review-fragment-config.mjs
 
       - name: Run config sanitizer
         run: node .github/scripts/review-fragment-config.mjs
