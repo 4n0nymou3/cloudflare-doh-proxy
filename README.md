@@ -36,7 +36,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 - بهینه‌سازی خودکار در طول زمان
 - امتیازدهی پویا: **35% سلامت + 30% سرعت + 20% قابلیت اطمینان + 15% منطقه جغرافیایی**
 
-#### 🌐 پشتیبانی از بیش از 220 سرور DNS معتبر
+#### 🌐 پشتیبانی از بیش از 190 سرور DNS معتبر
 - Cloudflare, Google, Quad9, OpenDNS
 - AdGuard, NextDNS, Mullvad
 - AhaDNS (آمریکا، هلند، لهستان، هند، سنگاپور، استرالیا)
@@ -47,18 +47,14 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 
 #### 🔒 حریم خصوصی و امنیت پیشرفته
 - **DNS Padding (RFC 8467)**: پیاده‌سازی استاندارد و واقعی با OPT Record کامل برای جلوگیری از Traffic Analysis
-- **QNAME Minimization**: حداقل‌سازی اطلاعات در Query ها
 - **ECS Stripping پیشرفته**: پارس و حذف واقعی EDNS Client Subnet از OPT Record برای جلوگیری از نشت IP
-- **Enhanced Header Randomization**: تصادفی‌سازی پیشرفته Headers (X-Request-ID, X-Client-Version, Accept-Language, Sec-CH-UA)
-- **Random Header Ordering**: ترتیب تصادفی Headers برای ضد Fingerprinting
+- **Enhanced Header Randomization**: تصادفی‌سازی User-Agent، Accept و افزودن تصادفی یکی از Header های اضافه (X-Request-ID, X-Client-Version, Accept-Language, Sec-CH-UA) به هر درخواست
+- **X-Forwarded-For تصادفی**: افزودن احتمالی یک IP تصادفی به Header ها برای کاهش قابلیت ردیابی
 
 #### 🛡️ ضد سانسور و مدیریت خطا
 - **Health Check** خودکار هر 90 ثانیه
 - **Circuit Breaker** برای مدیریت خرابی
 - **Intelligent Fallback** در صورت شکست Racing
-- **Domain Fronting** Simulation
-- **Random Delay** (5-100ms) برای ضد DPI
-- **Enhanced Decoy Requests** با احتمال 25% و 20 دامنه متنوع برای گمراه‌سازی سیستم‌های نظارتی
 - **Request Coalescing**: ادغام هوشمند درخواست‌های تکراری همزمان برای کاهش بار و latency
 
 #### ⚡ عملکرد و کارایی بالا
@@ -124,7 +120,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 
 1. روی **Edit Code** کلیک کنید
 2. تمام کد پیش‌فرض را پاک کنید
-3. محتوای فایل [`worker.js`](https://github.com/4n0nymou3/YOUR-REPO-NAME/blob/main/manual-worker/worker.js) را کپی کرده و جایگذاری کنید
+3. محتوای فایل [`worker.js`](https://github.com/4n0nymou3/cloudflare-doh-proxy/blob/main/manual-worker/worker.js) را کپی کرده و جایگذاری کنید
 4. روی **Save and Deploy** کلیک کنید
 
 #### مرحله 3: دریافت URL
@@ -252,7 +248,7 @@ System Settings → Privacy & Security → Profiles
 - رمزنگاری DNS
 - Fragment برای دور زدن DPI
 - تکه‌تکه کردن TLS Hello
-- پورت SOCKS (10808) و HTTP (10809)
+- پورت Mixed (SOCKS5 و HTTP روی یک پورت مشترک: 10808)
 
 ### 💻 دسکتاپ
 
@@ -308,7 +304,7 @@ https://your-domain/stats
 ```
 
 **اطلاعات قابل مشاهده:**
-- تعداد کل سرورها (220+)
+- تعداد کل سرورها (190+)
 - تعداد سرورهای سالم
 - میانگین سلامت کل سیستم
 - تعداد کل درخواست‌ها
@@ -389,23 +385,15 @@ const DNS_CACHE_TTL_DEFAULT = 300;
 const NEGATIVE_CACHE_TTL = 300;
 ```
 
-### تغییر احتمال Decoy Requests
+### تغییر احتمال افزودن X-Forwarded-For تصادفی
 
 ```javascript
-const DECOY_REQUEST_PROBABILITY = 0.25;
-```
-
-### تغییر Random Delay Range
-
-```javascript
-const RANDOM_DELAY_MIN = 5;
-const RANDOM_DELAY_MAX = 100;
+if (Math.random() < 0.25) {
 ```
 
 ### فعال/غیرفعال کردن قابلیت‌های حریم خصوصی
 
 ```javascript
-const QNAME_MINIMIZATION_ENABLED = true;
 const DNS_PADDING_ENABLED = true;
 const ECS_STRIPPING_ENABLED = true;
 ```
@@ -482,9 +470,6 @@ if (negativeDnsCache.size > 2000) {
 ### DNS Padding چیست؟
 تکنیکی مطابق RFC 8467 که یک OPT Record استاندارد با Padding Option (code 12) به Query اضافه می‌کند تا از Traffic Analysis و شناسایی الگوهای استفاده جلوگیری کند. پیاده‌سازی واقعی و کامل این استاندارد تضمین می‌کند که همه سرورهای upstream آن را می‌پذیرند.
 
-### QNAME Minimization چیست؟
-تکنیکی برای حداقل کردن اطلاعات ارسالی در Query ها به منظور افزایش حریم خصوصی.
-
 ### ECS Stripping چیست؟
 پارس و حذف واقعی EDNS Client Subnet از OPT Record در Query ها که از نشت اطلاعات IP شما به سرورهای DNS جلوگیری می‌کند. این پیاده‌سازی ساختار باینری پیام DNS را تجزیه کرده و option code 8 را به طور دقیق شناسایی و حذف می‌کند.
 
@@ -546,7 +531,7 @@ Health Score: 0-100 (با جریمه 12 امتیاز برای هر شکست مت
 Speed Score: 100 - (avgResponseTime / 40)
 Reliability Score: (successCount / totalRequests) × 100
 Region Score: 100 (منطقه مطابق) | 75 (Global) | 50 (سایر مناطق)
-Freshness Penalty: max(15, timeSinceLastCheck / 12000)
+Freshness Penalty: min(15, timeSinceLastCheck / 12000)
 ```
 
 ### مدیریت Cache
@@ -585,9 +570,12 @@ Timeout: 2500ms
 - [مستندات Cloudflare Pages](https://developers.cloudflare.com/pages/)
 - [RFC 8484 - DNS over HTTPS](https://datatracker.ietf.org/doc/html/rfc8484)
 - [RFC 8467 - DNS Padding](https://datatracker.ietf.org/doc/html/rfc8467)
-- [RFC 7816 - QNAME Minimization](https://datatracker.ietf.org/doc/html/rfc7816)
 - [Cloudflare DNS](https://1.1.1.1/)
 - [اپلیکیشن Intra](https://getintra.org/)
+
+## 🧰 ابزار کمکی برای Fork کنندگان: به‌روزرسانی خودکار کانفیگ Fragment
+
+اگر این ریپازیتوری را Fork می‌کنید، یک ابزار کمکی هم در مسیر `.github/` قرار داره که به کانفیگ اصلی DoH Proxy ربطی نداره و کاملاً اختیاریه: هر وقت یک کانفیگ Fragment جدید (مثلاً از یک منبع دیگر) پیدا کردید، کافیه محتوایش رو در فایل `configs/fragment-draft.json` جایگزین کنید و Commit کنید. یک GitHub Action به‌صورت کاملاً خودکار و بدون نیاز به هیچ API یا کلید خارجی، اطلاعات شخصی یا تبلیغاتی احتمالی رو از اون حذف می‌کنه، اعتبارسنجی فنی انجام می‌ده، و نسخه‌ی نهایی رو مستقیماً در `configs/doh-proxy-fragment.template.json` (همون فایلی که پنل وب همیشه از اون می‌خونه) ذخیره و Commit می‌کنه.
 
 ## 📝 مجوز
 
