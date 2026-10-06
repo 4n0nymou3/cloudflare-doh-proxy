@@ -55,13 +55,7 @@
       {
         "tag": "no-filter-dns",
         "address": "https://cloudflare-dns.com/dns-query",
-        "timeoutMs": 10000,
-        "finalQuery": true
-      },
-      {
-        "tag": "no-filter-dns-backup",
-        "address": "https://dns.google/dns-query",
-        "timeoutMs": 10000,
+        "timeoutMs": 12000,
         "finalQuery": true
       },
       {
@@ -133,7 +127,7 @@
           "tcpFastOpen": true,
           "tcpNoDelay": true,
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
             "interleave": 4,
             "maxConcurrentTry": 20
@@ -171,9 +165,9 @@
                   "1"
                 ],
                 "delays": [
-                  "1"
+                  "2"
                 ],
-                "maxSplit": "201"
+                "maxSplit": "400"
               }
             }
           ]
@@ -181,7 +175,7 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
             "interleave": 4,
             "maxConcurrentTry": 20
@@ -201,7 +195,7 @@
                 "packets": "tlshello",
                 "lengths": [
                   "0",
-                  "104",
+                  "80",
                   "1"
                 ],
                 "delays": [
@@ -215,13 +209,13 @@
               "settings": {
                 "packets": "1-1",
                 "lengths": [
-                  "114",
+                  "50",
                   "1"
                 ],
                 "delays": [
-                  "1"
+                  "3"
                 ],
-                "maxSplit": "11"
+                "maxSplit": "40"
               }
             }
           ]
@@ -231,11 +225,152 @@
           "tcpFastOpen": true,
           "tcpNoDelay": true,
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
             "interleave": 4,
             "maxConcurrentTry": 20
           }
+        }
+      }
+    },
+    {
+      "tag": "udp-noises",
+      "protocol": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv6v4"
+        },
+        "finalmask": {
+          "udp": [
+            {
+              "type": "noise",
+              "settings": {
+                "reset": "20",
+                "noise": [
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1100",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1150",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1200",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1220",
+                    "delay": "8"
+                  },
+                  {
+                    "rand": "1230",
+                    "delay": "8"
+                  }
+                ]
+              }
+            }
+          ]
         }
       }
     }
@@ -268,8 +403,7 @@
       {
         "outboundTag": "tcp-fragment-tls",
         "inboundTag": [
-          "no-filter-dns",
-          "no-filter-dns-backup"
+          "no-filter-dns"
         ]
       },
       {
