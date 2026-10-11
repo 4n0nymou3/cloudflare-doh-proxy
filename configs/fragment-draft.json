@@ -1,7 +1,7 @@
 {
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "version": {
-    "min": "26.6.27"
+    "min": "26.10.10"
   },
   "log": {
     "loglevel": "warning",
@@ -11,21 +11,22 @@
   "policy": {
     "levels": {
       "0": {
-        "uplinkOnly": 0,
-        "downlinkOnly": 0
+        "handshake": 4,
+        "connIdle": 300,
+        "uplinkOnly": 2,
+        "downlinkOnly": 4
       },
-      "12": {
-        "uplinkOnly": 0,
-        "downlinkOnly": 0,
-        "connIdle": 12
+      "1": {
+        "handshake": 4,
+        "connIdle": 15,
+        "uplinkOnly": 1,
+        "downlinkOnly": 1
       }
     }
   },
   "dns": {
     "hosts": {
       "geosite:category-ads-all": "#3",
-      "geosite:malware": "#3",
-      "geosite:phishing": "#3",
       "cloudflare-dns.com": "challenges.cloudflare.com"
     },
     "servers": [
@@ -48,13 +49,12 @@
         ]
       },
       {
-        "tag": "no-filter-dns",
+        "tag": "doh-cf",
         "address": "https://cloudflare-dns.com/dns-query",
-        "timeoutMs": 12000,
-        "finalQuery": true
+        "timeoutMs": 8000
       },
       {
-        "tag": "domestic-dns",
+        "tag": "local-dns",
         "address": "localhost",
         "domains": [
           "domain:ir",
@@ -71,7 +71,7 @@
           "geosite:rust",
           "full:challenges.cloudflare.com"
         ],
-        "timeoutMs": 12000,
+        "timeoutMs": 8000,
         "finalQuery": true
       }
     ],
@@ -81,15 +81,15 @@
   },
   "inbounds": [
     {
-      "tag": "mixed-in",
+      "tag": "local-in",
       "port": 10808,
       "protocol": "mixed",
       "sniffing": {
         "enabled": true,
         "destOverride": [
           "fakedns",
-          "tls",
           "http",
+          "tls",
           "quic"
         ],
         "routeOnly": false
@@ -100,42 +100,38 @@
       },
       "streamSettings": {
         "sockopt": {
-          "tcpKeepAliveInterval": 1,
-          "tcpKeepAliveIdle": 11,
-          "tcpFastOpen": true,
-          "tcpNoDelay": true
+          "tcpKeepAliveIdle": 60,
+          "tcpKeepAliveInterval": 30
         }
       }
     }
   ],
   "outbounds": [
     {
-      "tag": "block",
-      "protocol": "block"
+      "tag": "reject",
+      "protocol": "blackhole"
     },
     {
-      "tag": "tcp-direct",
-      "protocol": "direct",
+      "tag": "direct-tcp",
+      "protocol": "freedom",
       "streamSettings": {
         "sockopt": {
           "domainStrategy": "ForceIP",
-          "tcpFastOpen": true,
-          "tcpNoDelay": true,
           "happyEyeballs": {
-            "tryDelayMs": 300,
+            "tryDelayMs": 250,
             "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
+            "interleave": 2,
+            "maxConcurrentTry": 4
           }
         }
       }
     },
     {
-      "tag": "udp-direct",
-      "protocol": "direct",
+      "tag": "direct-udp",
+      "protocol": "freedom",
       "streamSettings": {
         "sockopt": {
-          "domainStrategy": "ForceIPv6v4"
+          "domainStrategy": "ForceIPv4v6"
         }
       }
     },
@@ -143,44 +139,12 @@
       "tag": "dns-out",
       "protocol": "dns",
       "settings": {
-        "userLevel": 12
+        "userLevel": 1
       }
     },
     {
-      "tag": "tcp-fragment",
-      "protocol": "direct",
-      "streamSettings": {
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "1"
-                ],
-                "delays": [
-                  "2"
-                ],
-                "maxSplit": "400"
-              }
-            }
-          ]
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        }
-      }
-    },
-    {
-      "tag": "tcp-fragment-tls",
-      "protocol": "direct",
+      "tag": "tlsfrag-k1",
+      "protocol": "freedom",
       "streamSettings": {
         "finalmask": {
           "tcp": [
@@ -190,7 +154,7 @@
                 "packets": "tlshello",
                 "lengths": [
                   "0",
-                  "80",
+                  "104",
                   "1"
                 ],
                 "delays": [
@@ -204,209 +168,394 @@
               "settings": {
                 "packets": "1-1",
                 "lengths": [
-                  "50",
+                  "114",
                   "1"
                 ],
                 "delays": [
-                  "3"
+                  "1"
                 ],
-                "maxSplit": "40"
+                "maxSplit": "11"
               }
             }
           ]
         },
         "sockopt": {
           "domainStrategy": "ForceIP",
-          "tcpFastOpen": true,
-          "tcpNoDelay": true,
           "happyEyeballs": {
-            "tryDelayMs": 300,
+            "tryDelayMs": 250,
             "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
+            "interleave": 2,
+            "maxConcurrentTry": 4
           }
         }
       }
     },
     {
-      "tag": "udp-noises",
-      "protocol": "direct",
+      "tag": "tlsfrag-t1",
+      "protocol": "freedom",
       "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIPv6v4"
-        },
         "finalmask": {
-          "udp": [
+          "tcp": [
             {
-              "type": "noise",
+              "type": "fragment",
               "settings": {
-                "reset": "20",
-                "noise": [
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1100",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1150",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1200",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1220",
-                    "delay": "8"
-                  },
-                  {
-                    "rand": "1230",
-                    "delay": "8"
-                  }
-                ]
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "200-500"
+                ],
+                "delays": [
+                  "150-400"
+                ],
+                "maxSplit": "4-6"
               }
             }
           ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "tlsfrag-t2",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "300-700"
+                ],
+                "delays": [
+                  "500-1200"
+                ],
+                "maxSplit": "3-4"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "tlsfrag-t3",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "80-240"
+                ],
+                "delays": [
+                  "60-150"
+                ],
+                "maxSplit": "8-12"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "tlsfrag-t4",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "30-80"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "6-10"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "60-200"
+                ],
+                "delays": [
+                  "200-600"
+                ],
+                "maxSplit": "3-5"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "tlsfrag-u1",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "2-4"
+                ],
+                "delays": [
+                  "1-2"
+                ],
+                "maxSplit": "0"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "tlsfrag-t5",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
+        }
+      }
+    },
+    {
+      "tag": "http-split",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "1-6"
+                ],
+                "delays": [
+                  "50-200"
+                ],
+                "maxSplit": "4-8"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 250,
+            "prioritizeIPv6": true,
+            "interleave": 2,
+            "maxConcurrentTry": 4
+          }
         }
       }
     }
   ],
+  "observatory": {
+    "subjectSelector": [
+      "tlsfrag-"
+    ],
+    "probeURL": "https://cloudflare-dns.com/dns-query",
+    "probeInterval": "2m",
+    "enableConcurrency": true
+  },
+  "burstObservatory": {
+    "subjectSelector": [
+      "tlsfrag-"
+    ],
+    "pingConfig": {
+      "destination": "https://www.youtube.com/generate_204",
+      "connectivity": "",
+      "interval": "3m",
+      "sampling": 2,
+      "timeout": "9s",
+      "httpMethod": "GET"
+    }
+  },
   "routing": {
     "domainStrategy": "IPOnDemand",
+    "balancers": [
+      {
+        "tag": "doh-pool",
+        "selector": [
+          "tlsfrag-"
+        ],
+        "strategy": {
+          "type": "leastPing"
+        },
+        "fallbackTag": "tlsfrag-k1"
+      },
+      {
+        "tag": "web-pool",
+        "selector": [
+          "tlsfrag-"
+        ],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "expected": 2,
+            "maxRTT": "8s",
+            "tolerance": 0.5
+          }
+        },
+        "fallbackTag": "tlsfrag-k1"
+      }
+    ],
     "rules": [
       {
-        "outboundTag": "block",
+        "outboundTag": "reject",
         "domain": [
-          "geosite:category-ads-all",
-          "geosite:malware",
-          "geosite:phishing"
+          "geosite:category-ads-all"
         ]
       },
       {
-        "outboundTag": "tcp-direct",
+        "outboundTag": "direct-tcp",
         "inboundTag": [
-          "domestic-dns"
+          "local-dns"
         ],
         "network": "tcp"
       },
       {
-        "outboundTag": "udp-direct",
+        "outboundTag": "direct-udp",
         "inboundTag": [
-          "domestic-dns"
+          "local-dns"
         ],
         "network": "udp"
       },
       {
-        "outboundTag": "tcp-fragment-tls",
+        "balancerTag": "doh-pool",
         "inboundTag": [
-          "no-filter-dns"
+          "doh-cf"
         ]
       },
       {
         "outboundTag": "dns-out",
-        "port": 53
+        "port": "53"
       },
       {
-        "outboundTag": "tcp-direct",
+        "outboundTag": "direct-tcp",
         "network": "tcp",
         "domain": [
           "domain:ir",
@@ -424,7 +573,7 @@
         ]
       },
       {
-        "outboundTag": "udp-direct",
+        "outboundTag": "direct-udp",
         "network": "udp",
         "domain": [
           "domain:ir",
@@ -442,14 +591,14 @@
         ]
       },
       {
-        "outboundTag": "block",
+        "outboundTag": "reject",
         "ip": [
           "10.10.34.0/24",
           "2001:4188:2:600::/64"
         ]
       },
       {
-        "outboundTag": "tcp-direct",
+        "outboundTag": "direct-tcp",
         "network": "tcp",
         "ip": [
           "geoip:private",
@@ -457,7 +606,7 @@
         ]
       },
       {
-        "outboundTag": "udp-direct",
+        "outboundTag": "direct-udp",
         "network": "udp",
         "ip": [
           "geoip:private",
@@ -465,66 +614,53 @@
         ]
       },
       {
-        "outboundTag": "block",
+        "outboundTag": "reject",
         "network": "udp",
         "protocol": [
           "quic"
-        ],
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
         ]
       },
       {
-        "outboundTag": "block",
+        "outboundTag": "reject",
         "network": "udp",
-        "port": "443",
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
-        ]
+        "port": "443"
       },
       {
-        "outboundTag": "udp-direct",
-        "network": "udp",
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
-        ]
+        "outboundTag": "direct-udp",
+        "network": "udp"
       },
       {
-        "outboundTag": "tcp-fragment-tls",
+        "balancerTag": "web-pool",
         "network": "tcp",
         "protocol": [
           "tls"
-        ],
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
         ]
       },
       {
-        "outboundTag": "tcp-fragment-tls",
+        "balancerTag": "web-pool",
         "network": "tcp",
-        "port": "443",
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
-        ]
+        "port": "443"
       },
       {
-        "outboundTag": "tcp-fragment",
+        "outboundTag": "http-split",
         "network": "tcp",
-        "ip": [
-          "0.0.0.0/0",
-          "::/0"
+        "protocol": [
+          "http"
         ]
       },
       {
-        "outboundTag": "block",
+        "outboundTag": "http-split",
+        "network": "tcp",
+        "port": "80"
+      },
+      {
+        "outboundTag": "direct-tcp",
+        "network": "tcp"
+      },
+      {
+        "outboundTag": "reject",
         "port": "0-65535"
       }
     ]
-  },
-  "stats": {}
+  }
 }
