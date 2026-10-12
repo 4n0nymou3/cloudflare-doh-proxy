@@ -356,6 +356,14 @@ function replacePersonalHosts(node, hosts) {
   return node;
 }
 
+function isWorkerAddress(address) {
+  return (
+    typeof address === "string" &&
+    (address.includes(WORKER_URL_PLACEHOLDER) ||
+      address.includes(WORKER_HOST_PLACEHOLDER))
+  );
+}
+
 function enforceDohEntry(config) {
   const dns = isPlainObject(config.dns) ? config.dns : {};
   const servers = Array.isArray(dns.servers) ? dns.servers : [];
@@ -364,12 +372,16 @@ function enforceDohEntry(config) {
 
   for (const server of servers) {
     const isWorkerEntry =
-      isPlainObject(server) &&
-      (server.tag === "doh-proxy" ||
-        server.address === WORKER_URL_PLACEHOLDER);
+      isWorkerAddress(server) ||
+      (isPlainObject(server) &&
+        (server.tag === "doh-proxy" || isWorkerAddress(server.address)));
 
     if (isWorkerEntry) {
-      if (typeof server.tag === "string" && server.tag !== "doh-proxy") {
+      if (
+        isPlainObject(server) &&
+        typeof server.tag === "string" &&
+        server.tag !== "doh-proxy"
+      ) {
         renamedTags.add(server.tag);
       }
 
@@ -383,6 +395,53 @@ function enforceDohEntry(config) {
   config.dns = dns;
 
   return renamedTags;
+}
+
+function alignDohRouting(config) {
+  if (!isPlainObject(config.routing) || !Array.isArray(config.routing.rules)) {
+    return;
+  }
+
+  const servers = Array.isArray(config.dns.servers) ? config.dns.servers : [];
+
+  const dnsTags = new Set();
+  const httpsTags = new Set();
+
+  for (const server of servers) {
+    if (!isPlainObject(server) || typeof server.tag !== "string") {
+      continue;
+    }
+
+    if (server.tag === "doh-proxy") {
+      continue;
+    }
+
+    dnsTags.add(server.tag);
+
+    if (
+      typeof server.address === "string" &&
+      /^https(\+local)?:\/\//i.test(server.address)
+    ) {
+      httpsTags.add(server.tag);
+    }
+  }
+
+  for (const rule of config.routing.rules) {
+    if (!isPlainObject(rule) || !Array.isArray(rule.inboundTag)) {
+      continue;
+    }
+
+    if (rule.inboundTag.length === 0 || rule.inboundTag.includes("doh-proxy")) {
+      continue;
+    }
+
+    const allDns = rule.inboundTag.every((tag) => dnsTags.has(tag));
+    const hasHttps = rule.inboundTag.some((tag) => httpsTags.has(tag));
+
+    if (allDns && hasHttps) {
+      rule.inboundTag = ["doh-proxy", ...rule.inboundTag];
+    }
+  }
 }
 
 function renameRoutingTags(config, renamedTags) {
@@ -641,6 +700,7 @@ function buildFinalConfig(candidateParsed, baseParsed) {
 
   const renamedTags = enforceDohEntry(replaced);
   renameRoutingTags(replaced, renamedTags);
+  alignDohRouting(replaced);
 
   const rest = {};
 
