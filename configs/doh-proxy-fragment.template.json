@@ -1,7 +1,7 @@
 {
   "remarks": "🛡️ DoH Proxy Pro + Fragment",
   "version": {
-    "min": "26.6.27"
+    "min": "26.10.10"
   },
   "log": {
     "loglevel": "warning",
@@ -43,6 +43,11 @@
       ]
     },
     "servers": [
+      {
+        "tag": "doh-proxy",
+        "address": "${workerUrl}",
+        "timeoutMs": 8000
+      },
       {
         "address": "fakedns",
         "domains": [
