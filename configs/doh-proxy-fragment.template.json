@@ -464,6 +464,7 @@
       {
         "balancerTag": "tlsfrag-pool",
         "inboundTag": [
+          "doh-proxy",
           "doh-cf",
           "doh-gg",
           "doh-q9"
