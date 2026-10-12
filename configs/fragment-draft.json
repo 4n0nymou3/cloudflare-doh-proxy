@@ -27,7 +27,20 @@
   "dns": {
     "hosts": {
       "geosite:category-ads-all": "#3",
-      "cloudflare-dns.com": "challenges.cloudflare.com"
+      "cloudflare-dns.com": [
+        "104.16.248.249",
+        "104.16.249.249",
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "dns.google": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ],
+      "dns.quad9.net": [
+        "9.9.9.9",
+        "149.112.112.112"
+      ]
     },
     "servers": [
       {
@@ -44,14 +57,23 @@
           "geosite:microsoft",
           "geosite:golang",
           "geosite:python",
-          "geosite:rust",
-          "full:challenges.cloudflare.com"
+          "geosite:rust"
         ]
       },
       {
         "tag": "doh-cf",
         "address": "https://cloudflare-dns.com/dns-query",
-        "timeoutMs": 8000
+        "timeoutMs": 6000
+      },
+      {
+        "tag": "doh-gg",
+        "address": "https://dns.google/dns-query",
+        "timeoutMs": 6000
+      },
+      {
+        "tag": "doh-q9",
+        "address": "https://dns.quad9.net/dns-query",
+        "timeoutMs": 6000
       },
       {
         "tag": "local-dns",
@@ -68,8 +90,7 @@
           "geosite:microsoft",
           "geosite:golang",
           "geosite:python",
-          "geosite:rust",
-          "full:challenges.cloudflare.com"
+          "geosite:rust"
         ],
         "timeoutMs": 8000,
         "finalQuery": true
@@ -140,54 +161,6 @@
       "protocol": "dns",
       "settings": {
         "userLevel": 1
-      }
-    },
-    {
-      "tag": "tlsfrag-k1",
-      "protocol": "freedom",
-      "streamSettings": {
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "0",
-                  "104",
-                  "1"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "114",
-                  "1"
-                ],
-                "delays": [
-                  "1"
-                ],
-                "maxSplit": "11"
-              }
-            }
-          ]
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 250,
-            "prioritizeIPv6": true,
-            "interleave": 2,
-            "maxConcurrentTry": 4
-          }
-        }
       }
     },
     {
@@ -375,39 +348,6 @@
       }
     },
     {
-      "tag": "tlsfrag-u1",
-      "protocol": "freedom",
-      "streamSettings": {
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "2-4"
-                ],
-                "delays": [
-                  "1-2"
-                ],
-                "maxSplit": "0"
-              }
-            }
-          ]
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 250,
-            "prioritizeIPv6": true,
-            "interleave": 2,
-            "maxConcurrentTry": 4
-          }
-        }
-      }
-    },
-    {
       "tag": "tlsfrag-t5",
       "protocol": "freedom",
       "streamSettings": {
@@ -477,50 +417,22 @@
     "subjectSelector": [
       "tlsfrag-"
     ],
-    "probeURL": "https://cloudflare-dns.com/dns-query",
+    "probeURL": "https://www.youtube.com/generate_204",
     "probeInterval": "2m",
     "enableConcurrency": true
-  },
-  "burstObservatory": {
-    "subjectSelector": [
-      "tlsfrag-"
-    ],
-    "pingConfig": {
-      "destination": "https://www.youtube.com/generate_204",
-      "connectivity": "",
-      "interval": "3m",
-      "sampling": 2,
-      "timeout": "9s",
-      "httpMethod": "GET"
-    }
   },
   "routing": {
     "domainStrategy": "IPOnDemand",
     "balancers": [
       {
-        "tag": "doh-pool",
+        "tag": "tlsfrag-pool",
         "selector": [
           "tlsfrag-"
         ],
         "strategy": {
           "type": "leastPing"
         },
-        "fallbackTag": "tlsfrag-k1"
-      },
-      {
-        "tag": "web-pool",
-        "selector": [
-          "tlsfrag-"
-        ],
-        "strategy": {
-          "type": "leastLoad",
-          "settings": {
-            "expected": 2,
-            "maxRTT": "8s",
-            "tolerance": 0.5
-          }
-        },
-        "fallbackTag": "tlsfrag-k1"
+        "fallbackTag": "tlsfrag-t3"
       }
     ],
     "rules": [
@@ -545,9 +457,11 @@
         "network": "udp"
       },
       {
-        "balancerTag": "doh-pool",
+        "balancerTag": "tlsfrag-pool",
         "inboundTag": [
-          "doh-cf"
+          "doh-cf",
+          "doh-gg",
+          "doh-q9"
         ]
       },
       {
@@ -630,14 +544,14 @@
         "network": "udp"
       },
       {
-        "balancerTag": "web-pool",
+        "balancerTag": "tlsfrag-pool",
         "network": "tcp",
         "protocol": [
           "tls"
         ]
       },
       {
-        "balancerTag": "web-pool",
+        "balancerTag": "tlsfrag-pool",
         "network": "tcp",
         "port": "443"
       },
