@@ -106,7 +106,7 @@
         "skipFallback": true
       }
     ],
-    "queryStrategy": "UseIP",
+    "queryStrategy": "UseSystem",
     "useSystemHosts": true,
     "serveStale": true
   },
@@ -149,10 +149,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -174,17 +174,50 @@
       }
     },
     {
-      "tag": "fallback-auto",
+      "tag": "legacy-k1",
       "protocol": "freedom",
       "streamSettings": {
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "0",
+                  "104",
+                  "1"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "114",
+                  "1"
+                ],
+                "delays": [
+                  "1"
+                ],
+                "maxSplit": "11"
+              }
+            }
+          ]
         }
       }
     },
@@ -195,10 +228,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -210,10 +243,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -243,10 +276,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -289,10 +322,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -321,10 +354,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
+            "tryDelayMs": 300,
             "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -367,10 +400,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -382,10 +415,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -415,10 +448,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -461,10 +494,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -493,10 +526,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         },
         "finalmask": {
@@ -556,10 +589,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 250,
+            "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 4
+            "interleave": 4,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -621,7 +654,7 @@
             ]
           }
         },
-        "fallbackTag": "fallback-auto"
+        "fallbackTag": "legacy-k1"
       }
     ],
     "rules": [
