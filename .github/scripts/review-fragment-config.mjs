@@ -487,16 +487,34 @@ function parseVersion(value) {
   return value.trim().split(".").map(Number);
 }
 
+function compareVersions(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) {
+      return a[i] < b[i] ? -1 : 1;
+    }
+  }
+
+  return 0;
+}
+
 function resolveVersion(candidateVersion, baseVersion) {
+  let chosen;
+
   if (isPlainObject(candidateVersion) && parseVersion(candidateVersion.min)) {
-    return candidateVersion;
+    chosen = { ...candidateVersion, min: candidateVersion.min.trim() };
+  } else if (isPlainObject(baseVersion) && parseVersion(baseVersion.min)) {
+    chosen = { min: baseVersion.min.trim() };
+  } else {
+    return { min: DEFAULT_VERSION_MIN };
   }
 
-  if (isPlainObject(baseVersion) && parseVersion(baseVersion.min)) {
-    return { min: baseVersion.min.trim() };
+  if (
+    compareVersions(parseVersion(chosen.min), parseVersion(DEFAULT_VERSION_MIN)) < 0
+  ) {
+    return { ...chosen, min: DEFAULT_VERSION_MIN };
   }
 
-  return { min: DEFAULT_VERSION_MIN };
+  return chosen;
 }
 
 function validateUniqueTags(items, label, allowNonObjects) {
