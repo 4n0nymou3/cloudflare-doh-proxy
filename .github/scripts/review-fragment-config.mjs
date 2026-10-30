@@ -14,7 +14,7 @@ const REQUIRED_DOH_ENTRY = {
 };
 
 const REQUIRED_REMARKS = "🛡️ DoH Proxy Pro + Fragment";
-const DEFAULT_VERSION_MIN = "26.6.27";
+const DEFAULT_VERSION_MIN = "26.10.29";
 
 const PERSONAL_HOST_SOURCE =
   "(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:workers|pages)\\.dev";
