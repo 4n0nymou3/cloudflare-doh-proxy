@@ -1,0 +1,1112 @@
+{
+  "remarks": "🛡️ DoH Proxy Pro + Browser Front",
+  "version": {
+    "min": "26.10.29"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "handshake": 6,
+        "connIdle": 300,
+        "uplinkOnly": 2,
+        "downlinkOnly": 4
+      },
+      "1": {
+        "handshake": 6,
+        "connIdle": 15,
+        "uplinkOnly": 1,
+        "downlinkOnly": 1
+      }
+    }
+  },
+  "dns": {
+    "hosts": {
+      "geosite:category-ads-all": "#3",
+      "cloudflare-dns.com": "challenges.cloudflare.com",
+      "${workerHost}": "challenges.cloudflare.com"
+    },
+    "servers": [
+      {
+        "tag": "doh-proxy",
+        "address": "${workerUrl}",
+        "timeoutMs": 8000
+      },
+      {
+        "address": "fakedns",
+        "domains": [
+          "domain:ir",
+          "geosite:private",
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust",
+          "full:challenges.cloudflare.com"
+        ],
+        "skipFallback": true
+      },
+      {
+        "tag": "doh-cf",
+        "address": "https://cloudflare-dns.com/dns-query",
+        "timeoutMs": 5000
+      },
+      {
+        "tag": "doh-ip4",
+        "address": "https://1.1.1.1/dns-query",
+        "timeoutMs": 5000
+      },
+      {
+        "tag": "doh-ip6",
+        "address": "https://[2606:4700:4700::1111]/dns-query",
+        "timeoutMs": 5000
+      },
+      {
+        "tag": "doh-gg",
+        "address": "https://8.8.8.8/dns-query",
+        "timeoutMs": 5000
+      },
+      {
+        "tag": "local-dns",
+        "address": "localhost",
+        "domains": [
+          "domain:ir",
+          "geosite:private",
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust",
+          "full:challenges.cloudflare.com"
+        ],
+        "timeoutMs": 8000,
+        "finalQuery": true,
+        "skipFallback": true
+      }
+    ],
+    "queryStrategy": "UseSystem",
+    "useSystemHosts": true,
+    "serveStale": true
+  },
+  "inbounds": [
+    {
+      "tag": "socks-in",
+      "port": 10808,
+      "protocol": "socks",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "fakedns",
+          "http",
+          "tls",
+          "quic"
+        ],
+        "routeOnly": false
+      },
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tcpKeepAliveIdle": 60,
+          "tcpKeepAliveInterval": 30
+        }
+      }
+    },
+    {
+      "tag": "http-in",
+      "port": 10809,
+      "protocol": "http",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "fakedns",
+          "http",
+          "tls"
+        ],
+        "routeOnly": false
+      }
+    },
+    {
+      "tag": "tls-decrypt-h11",
+      "listen": "127.0.0.1",
+      "port": 4431,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp",
+        "port": 443,
+        "followRedirect": true
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "alpn": [
+            "http/1.1"
+          ],
+          "certificates": [
+            {
+              "usage": "issue",
+              "certificate": [
+                "__CA_CERTIFICATE__"
+              ],
+              "key": [
+                "__CA_PRIVATE_KEY__"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tls-decrypt-h2",
+      "listen": "127.0.0.1",
+      "port": 4432,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp",
+        "port": 443,
+        "followRedirect": true
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "alpn": [
+            "h2",
+            "http/1.1"
+          ],
+          "certificates": [
+            {
+              "usage": "issue",
+              "certificate": [
+                "__CA_CERTIFICATE__"
+              ],
+              "key": [
+                "__CA_PRIVATE_KEY__"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "reject",
+      "protocol": "blackhole"
+    },
+    {
+      "tag": "direct-tcp",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "direct-udp",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4v6"
+        }
+      }
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns",
+      "settings": {
+        "userLevel": 1
+      }
+    },
+    {
+      "tag": "legacy-k1",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "0",
+                  "104",
+                  "1"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "114",
+                  "1"
+                ],
+                "delays": [
+                  "1"
+                ],
+                "maxSplit": "11"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "redirect-h11",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "127.0.0.1:4431"
+      }
+    },
+    {
+      "tag": "redirect-h2",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "127.0.0.1:4432"
+      }
+    },
+    {
+      "tag": "repack-google",
+      "protocol": "freedom",
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.google.com",
+          "verifyPeerCertByName": "fromMitM,www.google.com,dns.google,www.googlevideo.com,www.youtube.com",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 200,
+            "prioritizeIPv6": true,
+            "interleave": 1,
+            "maxConcurrentTry": 2
+          }
+        }
+      }
+    },
+    {
+      "tag": "repack-meta",
+      "protocol": "freedom",
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.whatsapp.com",
+          "verifyPeerCertByName": "fromMitM,www.whatsapp.com,www.facebook.com,www.ar.meta.com,www.fb.com,www.whatsapp.net,www.atlassolutions.com,www.secure.facebook.com,www.extern.facebook.com,www.internet.org,www.oculus.com,www.wit.ai,www.facebook-dns.com,www.instagram.com,www.meta.com,www.external-disputes.meta.com,www.fbe2e.com,www.cloud.x2p.facebook.net,www.secure.latest.facebook.com",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 200,
+            "prioritizeIPv6": true,
+            "interleave": 1,
+            "maxConcurrentTry": 2
+          }
+        }
+      }
+    },
+    {
+      "tag": "repack-x",
+      "protocol": "freedom",
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.fastly.com",
+          "verifyPeerCertByName": "fromMitM,www.fastly.com,www.reddit.com,x.com",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 200,
+            "prioritizeIPv6": true,
+            "interleave": 1,
+            "maxConcurrentTry": 2
+          }
+        }
+      }
+    },
+    {
+      "tag": "repack-telegram",
+      "protocol": "freedom",
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.google.com",
+          "verifyPeerCertByName": "fromMitM,telegram.org,web.telegram.org,www.google.com",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 200,
+            "prioritizeIPv6": true,
+            "interleave": 1,
+            "maxConcurrentTry": 2
+          }
+        }
+      }
+    },
+    {
+      "tag": "tf-v6-plain",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "tf-v6-rec",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v6-rec-tcp",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "60-200"
+                ],
+                "delays": [
+                  "10-20"
+                ],
+                "maxSplit": "8-16"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v6-tcp-slow",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "40-120"
+                ],
+                "delays": [
+                  "120-300"
+                ],
+                "maxSplit": "5-8"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v6-rec-slow",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": true,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "200-500"
+                ],
+                "delays": [
+                  "150-400"
+                ],
+                "maxSplit": "4-6"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v4-plain",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "tf-v4-rec",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v4-rec-tcp",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "60-200"
+                ],
+                "delays": [
+                  "10-20"
+                ],
+                "maxSplit": "8-16"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v4-tcp-slow",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "40-120"
+                ],
+                "delays": [
+                  "120-300"
+                ],
+                "maxSplit": "5-8"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "tf-v4-rec-slow",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "40-90",
+                  "1-2"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "200-500"
+                ],
+                "delays": [
+                  "150-400"
+                ],
+                "maxSplit": "4-6"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "http-split",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "1-6"
+                ],
+                "delays": [
+                  "50-200"
+                ],
+                "maxSplit": "4-8"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    }
+  ],
+  "burstObservatory": {
+    "subjectSelector": [
+      "tf-"
+    ],
+    "pingConfig": {
+      "destination": "https://www.youtube.com/generate_204",
+      "connectivity": "",
+      "interval": "60s",
+      "sampling": 2,
+      "timeout": "14s",
+      "httpMethod": "GET"
+    }
+  },
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "balancers": [
+      {
+        "tag": "pool",
+        "selector": [
+          "tf-"
+        ],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "expected": 1,
+            "maxRTT": "14s",
+            "tolerance": 0.5,
+            "costs": [
+              {
+                "regexp": true,
+                "match": "-plain$",
+                "value": 1
+              },
+              {
+                "regexp": true,
+                "match": "-rec$",
+                "value": 9
+              },
+              {
+                "regexp": true,
+                "match": "-rec-tcp$",
+                "value": 25
+              },
+              {
+                "regexp": true,
+                "match": "-tcp-slow$",
+                "value": 49
+              },
+              {
+                "regexp": true,
+                "match": "-rec-slow$",
+                "value": 81
+              }
+            ]
+          }
+        },
+        "fallbackTag": "legacy-k1"
+      }
+    ],
+    "rules": [
+      {
+        "outboundTag": "reject",
+        "domain": [
+          "geosite:category-ads-all"
+        ]
+      },
+      {
+        "outboundTag": "direct-tcp",
+        "inboundTag": [
+          "local-dns"
+        ],
+        "network": "tcp"
+      },
+      {
+        "outboundTag": "direct-udp",
+        "inboundTag": [
+          "local-dns"
+        ],
+        "network": "udp"
+      },
+      {
+        "balancerTag": "pool",
+        "inboundTag": [
+          "doh-proxy",
+          "doh-cf",
+          "doh-ip4",
+          "doh-ip6",
+          "doh-gg"
+        ]
+      },
+      {
+        "outboundTag": "dns-out",
+        "port": "53"
+      },
+      {
+        "outboundTag": "repack-google",
+        "inboundTag": [
+          "tls-decrypt-h11",
+          "tls-decrypt-h2"
+        ],
+        "domain": [
+          "domain:googlevideo.com",
+          "domain:youtube.com",
+          "domain:youtu.be",
+          "domain:youtube-nocookie.com",
+          "domain:ytimg.com",
+          "domain:ggpht.com",
+          "domain:yt.be",
+          "domain:youtubekids.com",
+          "full:youtubei.googleapis.com",
+          "full:yt3.googleusercontent.com"
+        ]
+      },
+      {
+        "outboundTag": "repack-meta",
+        "inboundTag": [
+          "tls-decrypt-h11",
+          "tls-decrypt-h2"
+        ],
+        "domain": [
+          "domain:instagram.com",
+          "domain:cdninstagram.com",
+          "domain:facebook.com",
+          "domain:fbcdn.net",
+          "domain:fb.com",
+          "domain:fbsbx.com",
+          "domain:facebook.net",
+          "domain:fb.me",
+          "domain:threads.net",
+          "domain:meta.com",
+          "domain:messenger.com"
+        ]
+      },
+      {
+        "outboundTag": "repack-x",
+        "inboundTag": [
+          "tls-decrypt-h11",
+          "tls-decrypt-h2"
+        ],
+        "domain": [
+          "domain:x.com",
+          "domain:twitter.com",
+          "domain:twimg.com",
+          "domain:t.co"
+        ]
+      },
+      {
+        "outboundTag": "repack-telegram",
+        "inboundTag": [
+          "tls-decrypt-h11",
+          "tls-decrypt-h2"
+        ],
+        "domain": [
+          "domain:telegram.org",
+          "domain:t.me",
+          "domain:telegram.me",
+          "domain:telesco.pe",
+          "domain:telegram-cdn.org"
+        ]
+      },
+      {
+        "outboundTag": "reject",
+        "inboundTag": [
+          "tls-decrypt-h11",
+          "tls-decrypt-h2"
+        ]
+      },
+      {
+        "outboundTag": "direct-tcp",
+        "network": "tcp",
+        "domain": [
+          "domain:ir",
+          "geosite:private",
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust"
+        ]
+      },
+      {
+        "outboundTag": "direct-udp",
+        "network": "udp",
+        "domain": [
+          "domain:ir",
+          "geosite:private",
+          "geosite:category-ir",
+          "geosite:xai",
+          "geosite:openai",
+          "geosite:google-deepmind",
+          "geosite:anthropic",
+          "geosite:github",
+          "geosite:microsoft",
+          "geosite:golang",
+          "geosite:python",
+          "geosite:rust"
+        ]
+      },
+      {
+        "outboundTag": "redirect-h11",
+        "inboundTag": [
+          "socks-in",
+          "http-in"
+        ],
+        "network": "tcp",
+        "protocol": [
+          "tls"
+        ],
+        "port": "443",
+        "domain": [
+          "domain:googlevideo.com"
+        ]
+      },
+      {
+        "outboundTag": "redirect-h2",
+        "inboundTag": [
+          "socks-in",
+          "http-in"
+        ],
+        "network": "tcp",
+        "protocol": [
+          "tls"
+        ],
+        "port": "443",
+        "domain": [
+          "domain:youtube.com",
+          "domain:youtu.be",
+          "domain:youtube-nocookie.com",
+          "domain:ytimg.com",
+          "domain:ggpht.com",
+          "domain:yt.be",
+          "domain:youtubekids.com",
+          "full:youtubei.googleapis.com",
+          "full:yt3.googleusercontent.com",
+          "domain:instagram.com",
+          "domain:cdninstagram.com",
+          "domain:facebook.com",
+          "domain:fbcdn.net",
+          "domain:fb.com",
+          "domain:fbsbx.com",
+          "domain:facebook.net",
+          "domain:fb.me",
+          "domain:threads.net",
+          "domain:meta.com",
+          "domain:messenger.com",
+          "domain:x.com",
+          "domain:twitter.com",
+          "domain:twimg.com",
+          "domain:t.co",
+          "domain:telegram.org",
+          "domain:t.me",
+          "domain:telegram.me",
+          "domain:telesco.pe",
+          "domain:telegram-cdn.org"
+        ]
+      },
+      {
+        "outboundTag": "reject",
+        "ip": [
+          "10.10.34.0/24",
+          "2001:4188:2:600::/64"
+        ]
+      },
+      {
+        "outboundTag": "direct-tcp",
+        "network": "tcp",
+        "ip": [
+          "geoip:private",
+          "geoip:ir"
+        ]
+      },
+      {
+        "outboundTag": "direct-udp",
+        "network": "udp",
+        "ip": [
+          "geoip:private",
+          "geoip:ir"
+        ]
+      },
+      {
+        "outboundTag": "reject",
+        "network": "udp",
+        "protocol": [
+          "quic"
+        ]
+      },
+      {
+        "outboundTag": "reject",
+        "network": "udp",
+        "port": "443"
+      },
+      {
+        "outboundTag": "direct-udp",
+        "network": "udp"
+      },
+      {
+        "balancerTag": "pool",
+        "network": "tcp",
+        "protocol": [
+          "tls"
+        ]
+      },
+      {
+        "balancerTag": "pool",
+        "network": "tcp",
+        "port": "443"
+      },
+      {
+        "outboundTag": "http-split",
+        "network": "tcp",
+        "protocol": [
+          "http"
+        ]
+      },
+      {
+        "outboundTag": "http-split",
+        "network": "tcp",
+        "port": "80"
+      },
+      {
+        "outboundTag": "direct-tcp",
+        "network": "tcp"
+      },
+      {
+        "outboundTag": "reject",
+        "port": "0-65535"
+      }
+    ]
+  }
+}
