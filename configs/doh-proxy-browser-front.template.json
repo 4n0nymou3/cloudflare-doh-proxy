@@ -332,8 +332,8 @@
       "streamSettings": {
         "security": "tls",
         "tlsSettings": {
-          "serverName": "www.whatsapp.com",
-          "verifyPeerCertByName": "fromMitM,www.whatsapp.com,www.facebook.com,www.ar.meta.com,www.fb.com,www.whatsapp.net,www.atlassolutions.com,www.secure.facebook.com,www.extern.facebook.com,www.internet.org,www.oculus.com,www.wit.ai,www.facebook-dns.com,www.instagram.com,www.meta.com,www.external-disputes.meta.com,www.fbe2e.com,www.cloud.x2p.facebook.net,www.secure.latest.facebook.com",
+          "serverName": "www.microsoft.com",
+          "verifyPeerCertByName": "fromMitM,www.google.com,www.microsoft.com,www.whatsapp.com,www.facebook.com,www.ar.meta.com,www.fb.com,www.whatsapp.net,www.atlassolutions.com,www.secure.facebook.com,www.extern.facebook.com,www.internet.org,www.oculus.com,www.wit.ai,www.facebook-dns.com,www.instagram.com,www.meta.com,www.external-disputes.meta.com,www.fbe2e.com,www.cloud.x2p.facebook.net,www.secure.latest.facebook.com",
           "alpn": [
             "fromMitM"
           ],
@@ -905,7 +905,19 @@
           "domain:fb.me",
           "domain:threads.net",
           "domain:meta.com",
-          "domain:messenger.com"
+          "domain:messenger.com",
+          "domain:whatsapp.com",
+          "domain:whatsapp.net",
+          "domain:wa.me",
+          "domain:threads.com",
+          "domain:ig.me",
+          "domain:igcdn.com",
+          "domain:fbcdn.com",
+          "domain:fbsbx.net",
+          "domain:fb.watch",
+          "domain:fb.gg",
+          "domain:m.me",
+          "domain:oculus.com"
         ]
       },
       {
@@ -1025,6 +1037,18 @@
           "domain:threads.net",
           "domain:meta.com",
           "domain:messenger.com",
+          "domain:whatsapp.com",
+          "domain:whatsapp.net",
+          "domain:wa.me",
+          "domain:threads.com",
+          "domain:ig.me",
+          "domain:igcdn.com",
+          "domain:fbcdn.com",
+          "domain:fbsbx.net",
+          "domain:fb.watch",
+          "domain:fb.gg",
+          "domain:m.me",
+          "domain:oculus.com",
           "domain:x.com",
           "domain:twitter.com",
           "domain:twimg.com",
