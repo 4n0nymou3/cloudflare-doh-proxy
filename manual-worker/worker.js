@@ -2027,6 +2027,68 @@ async function handleRequest(request) {
         .footer a:hover { text-decoration: underline; }
         .footer .footer-sub { margin-top: 4px; font-size: 0.85em; color: var(--fg-subtle); }
 
+        .front-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin: 14px 0 6px;
+        }
+
+        .front-label { color: var(--fg-muted); font-size: 0.9em; }
+
+        .front-select {
+            background: var(--canvas-overlay);
+            color: var(--fg-default);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.88em;
+            font-family: var(--font-sans);
+        }
+
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .front-status {
+            margin: 10px 0 4px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.92em;
+            line-height: 1.7;
+            display: none;
+            border: 1px solid var(--border-default);
+            background: var(--canvas-inset);
+            color: var(--fg-muted);
+        }
+
+        .front-status.is-visible { display: block; }
+        .front-status.is-error { color: var(--danger-fg); border-color: rgba(248, 81, 73, 0.4); }
+        .front-status.is-success { color: var(--success-fg); border-color: rgba(63, 185, 80, 0.4); }
+
+        .front-result {
+            display: none;
+            margin: 12px 0;
+            padding: 14px 16px;
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            background: var(--canvas-inset);
+        }
+
+        .front-result.is-visible { display: block; }
+
+        .front-fp {
+            font-family: var(--font-mono);
+            font-size: 0.82em;
+            color: #a5d6ff;
+            direction: ltr;
+            text-align: left;
+            word-break: break-all;
+            margin: 6px 0 12px;
+        }
+
+        .front-steps { margin: 10px 0; padding-inline-start: 22px; line-height: 1.9; }
+        .front-steps li { margin: 4px 0; }
+
         @media (max-width: 720px) {
             .container { padding: 28px 16px calc(96px + env(safe-area-inset-bottom)); }
             h1.hero-title { font-size: 1.7em; }
@@ -2357,6 +2419,55 @@ async function handleRequest(request) {
                 • مکمل DoH؛ روی لایه‌ی متفاوتی از شبکه عمل می‌کند<br>
                 • افزایش قابلیت دور زدن فیلترینگ‌های پیشرفته‌تر</p>
             </div>
+
+            <div class="usage-card" id="frontCard">
+                <h3 class="card-title">🌐 حالت مرورگر با گواهی اختصاصی (آزمایشی)</h3>
+                <p>بعضی سایت‌ها، مثل ویدیوهای یوتیوب، بر اساس نام سایت در بخش SNI فیلتر می‌شوند و Fragment به‌تنهایی کمکی نمی‌کند. این حالت، نام سایت را در اتصال خروجی عوض می‌کند. برای این کار Xray باید اتصال امن فقط چند سایت مشخص را روی همین دستگاه باز و دوباره رمزگذاری کند و به همین دلیل به یک گواهی اختصاصی نیاز دارد. گواهی و کلید خصوصی آن <strong>همین‌جا داخل مرورگر شما ساخته می‌شوند</strong> و هیچ‌جا ارسال یا ذخیره نمی‌شوند.</p>
+
+                <div class="warning-box">
+                    <strong>قبل از استفاده بخوانید:</strong><br>
+                    • این حالت فقط برای مرورگرهای مبتنی بر Chrome مناسب است. اپ‌های یوتیوب، اینستاگرام و X معمولاً گواهی نصب‌شده را قبول نمی‌کنند.<br>
+                    • فایل کانفیگ شامل کلید خصوصی گواهی شماست؛ آن را برای کسی نفرستید و جایی منتشر نکنید.<br>
+                    • گواهی فقط برای دامنه‌های مشخصِ همین کانفیگ معتبر است و تاریخ انقضا دارد، ولی تا وقتی نصب است به آن اعتماد می‌شود؛ بعد از پایان استفاده آن را از دستگاه حذف کنید.<br>
+                    • فقط روی دستگاه شخصی خودتان نصب کنید، و روی دستگاه‌های کاری یا اشتراکی نصب نکنید.<br>
+                    • یوتیوب در آزمایش‌ها نتیجه‌ی مثبت داشته؛ اینستاگرام، X و تلگرام وب هنوز آزمایشی هستند و ممکن است کار نکنند.
+                </div>
+
+                <div class="front-controls">
+                    <label class="front-label" for="frontDays">مدت اعتبار گواهی:</label>
+                    <select class="front-select" id="frontDays">
+                        <option value="30">۳۰ روز</option>
+                        <option value="90" selected>۹۰ روز</option>
+                        <option value="180">۱۸۰ روز</option>
+                        <option value="365">۳۶۵ روز</option>
+                    </select>
+                    <button class="btn btn-primary" id="frontGenerateBtn" data-front-action="generate">🔐 ساخت گواهی و کانفیگ من</button>
+                </div>
+
+                <div class="front-status" id="frontStatus"></div>
+
+                <div class="front-result" id="frontResult">
+                    <div><strong>اثر انگشت گواهی (SHA-256):</strong></div>
+                    <div class="front-fp" id="frontFingerprint"></div>
+                    <div class="front-label" id="frontExpiry"></div>
+                    <div class="front-controls">
+                        <button class="btn btn-accent" data-front-action="download-cert">⬇️ دانلود گواهی (.crt)</button>
+                        <button class="btn btn-accent" data-front-action="download-config">⬇️ دانلود کانفیگ (.json)</button>
+                        <button class="btn" data-front-action="copy-config" id="frontCopyBtn">📋 کپی کانفیگ</button>
+                    </div>
+                    <p class="front-label">هر دو فایل باید از همین یک بار ساخت باشند. اگر دوباره دکمه‌ی ساخت را بزنید، گواهی و کانفیگ جدیدی ساخته می‌شود و باید جفت جدید را استفاده کنید.</p>
+                </div>
+
+                <p><strong>مراحل استفاده:</strong></p>
+                <ol class="front-steps">
+                    <li>دکمه‌ی «ساخت گواهی و کانفیگ من» را بزنید و هر دو فایل را دانلود کنید.</li>
+                    <li>اندروید: تنظیمات ← امنیت ← رمزنگاری و اعتبارنامه‌ها ← نصب گواهی ← گواهی CA، و بعد فایل .crt را انتخاب کنید. نام منوها در هر گوشی کمی فرق می‌کند؛ در صورت نیاز در تنظیمات عبارت «گواهی» را جستجو کنید.</li>
+                    <li>سایر سیستم‌عامل‌ها: گواهی را به‌عنوان «مرجع صدور گواهی معتبر (Root CA)» روی همان دستگاه نصب کنید.</li>
+                    <li>فایل کانفیگ JSON را در کلاینت Xray (مثل v2rayNG یا Happ) وارد کنید و وصل شوید. این کانفیگ به هسته‌ی نسخه‌ی ۲۶.۱۰.۲۹ یا بالاتر نیاز دارد.</li>
+                    <li>مرورگر Chrome را کامل ببندید، دوباره باز کنید و سایت مورد نظر را امتحان کنید.</li>
+                    <li>بعد از پایان کار، گواهی را از بخش «اعتبارنامه‌های کاربر» (User credentials) حذف کنید.</li>
+                </ol>
+            </div>
         </section>
 
         <h2 class="section-title">🛡️ توصیه‌های امنیتی</h2>
@@ -2430,6 +2541,11 @@ async function handleRequest(request) {
             <details class="faq-item">
                 <summary>Request Coalescing چیست؟</summary>
                 <div class="faq-answer">وقتی چند کاربر یا برنامه هم‌زمان برای یک دامنه‌ی یکسان کوئری می‌زنند، به‌جای ارسال چند درخواست جداگانه به provider بالادستی، Worker فقط یک درخواست می‌فرستد و پاسخ را بین همه به اشتراک می‌گذارد. این باعث کاهش بار سرور و کاهش تأخیر می‌شود.</div>
+            </details>
+
+            <details class="faq-item">
+                <summary>حالت مرورگر با گواهی اختصاصی چیست و امن است؟</summary>
+                <div class="faq-answer">این حالت برای سایت‌هایی است که فقط بر اساس نام سایت در SNI فیلتر می‌شوند. Xray اتصال امن چند سایت مشخص را روی همان دستگاه باز می‌کند و با نام دیگری دوباره می‌فرستد، پس به یک گواهی اختصاصی نیاز دارد. گواهی داخل مرورگر خودتان ساخته می‌شود و کلید خصوصی‌اش به هیچ سروری ارسال نمی‌شود. گواهی فقط برای دامنه‌های فهرست‌شده‌ی همین کانفیگ معتبر است و تاریخ انقضا دارد، اما تا وقتی روی دستگاه نصب است و کلیدش پیش شماست، به آن اعتماد می‌شود. پس فایل کانفیگ را به کسی ندهید و بعد از پایان استفاده گواهی را حذف کنید. این روش را فقط روی دستگاه شخصی خودتان استفاده کنید.</div>
             </details>
         </section>
 
@@ -2567,6 +2683,291 @@ async function handleRequest(request) {
                 }
             }
         }
+
+        function frontConcat(parts) {
+          var total = 0;
+          parts.forEach(function (p) { total += p.length; });
+          var out = new Uint8Array(total);
+          var off = 0;
+          parts.forEach(function (p) { out.set(p, off); off += p.length; });
+          return out;
+        }
+
+        function frontDerLength(n) {
+          if (n < 128) return [n];
+          var out = [];
+          while (n > 0) { out.unshift(n & 255); n = Math.floor(n / 256); }
+          return [128 | out.length].concat(out);
+        }
+
+        function frontTlv(tag, content) {
+          return frontConcat([Uint8Array.from([tag].concat(frontDerLength(content.length))), content]);
+        }
+
+        function frontSeq(parts) { return frontTlv(0x30, frontConcat(parts)); }
+        function frontSet(parts) { return frontTlv(0x31, frontConcat(parts)); }
+        function frontOctet(bytes) { return frontTlv(0x04, bytes); }
+        function frontBool(value) { return frontTlv(0x01, Uint8Array.from([value ? 255 : 0])); }
+        function frontUtf8(text) { return frontTlv(0x0c, new TextEncoder().encode(text)); }
+        function frontBitString(bytes, unused) { return frontTlv(0x03, frontConcat([Uint8Array.from([unused || 0]), bytes])); }
+
+        function frontInteger(bytes) {
+          var i = 0;
+          while (i < bytes.length - 1 && bytes[i] === 0) i++;
+          var b = bytes.slice(i);
+          if (b[0] & 128) b = frontConcat([Uint8Array.from([0]), b]);
+          return frontTlv(0x02, b);
+        }
+
+        function frontOid(text) {
+          var p = text.split('.').map(Number);
+          var bytes = [p[0] * 40 + p[1]];
+          for (var i = 2; i < p.length; i++) {
+            var v = p[i];
+            var stack = [v & 127];
+            v = Math.floor(v / 128);
+            while (v > 0) { stack.unshift((v & 127) | 128); v = Math.floor(v / 128); }
+            bytes = bytes.concat(stack);
+          }
+          return frontTlv(0x06, Uint8Array.from(bytes));
+        }
+
+        function frontTwo(n) { return (n < 10 ? '0' : '') + n; }
+
+        function frontUtcTime(date) {
+          var y = date.getUTCFullYear();
+          if (y >= 2050) y = 2049;
+          var s = frontTwo(y % 100) + frontTwo(date.getUTCMonth() + 1) + frontTwo(date.getUTCDate()) +
+            frontTwo(date.getUTCHours()) + frontTwo(date.getUTCMinutes()) + frontTwo(date.getUTCSeconds()) + 'Z';
+          return frontTlv(0x17, new TextEncoder().encode(s));
+        }
+
+        function frontName(org, cn) {
+          return frontSeq([
+            frontSet([frontSeq([frontOid('2.5.4.10'), frontUtf8(org)])]),
+            frontSet([frontSeq([frontOid('2.5.4.3'), frontUtf8(cn)])])
+          ]);
+        }
+
+        function frontExtension(oid, critical, valueDer) {
+          var parts = [frontOid(oid)];
+          if (critical) parts.push(frontBool(true));
+          parts.push(frontOctet(valueDer));
+          return frontSeq(parts);
+        }
+
+        function frontHex(bytes) {
+          var s = '';
+          for (var i = 0; i < bytes.length; i++) s += (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16);
+          return s;
+        }
+
+        function frontBase64(bytes) {
+          var s = '';
+          for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+          return btoa(s);
+        }
+
+        function frontPemLines(label, der) {
+          var b64 = frontBase64(der);
+          var lines = ['-----BEGIN ' + label + '-----'];
+          for (var i = 0; i < b64.length; i += 64) lines.push(b64.slice(i, i + 64));
+          lines.push('-----END ' + label + '-----');
+          return lines;
+        }
+
+        function frontRawSignatureToDer(sig) {
+          var r = sig.slice(0, 32);
+          var s = sig.slice(32, 64);
+          return frontSeq([frontInteger(r), frontInteger(s)]);
+        }
+
+        function frontCollectDomains(config) {
+          var found = [];
+          var rules = (config && config.routing && config.routing.rules) || [];
+          rules.forEach(function (rule) {
+            var tags = rule.inboundTag || [];
+            var isDecrypt = tags.some(function (t) { return String(t).indexOf('tls-decrypt') === 0; });
+            if (!isDecrypt || !Array.isArray(rule.domain)) return;
+            rule.domain.forEach(function (d) {
+              var m = /^(domain|full):(.+)$/.exec(d);
+              if (m && found.indexOf(m[2]) === -1) found.push(m[2]);
+            });
+          });
+          return found;
+        }
+
+        async function frontGenerateCertificate(domains, days) {
+          var subtle = crypto.subtle;
+          var keyPair = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+          var spki = new Uint8Array(await subtle.exportKey('spki', keyPair.publicKey));
+          var rawPoint = new Uint8Array(await subtle.exportKey('raw', keyPair.publicKey));
+          var pkcs8 = new Uint8Array(await subtle.exportKey('pkcs8', keyPair.privateKey));
+          var keyId = new Uint8Array(await subtle.digest('SHA-1', rawPoint));
+
+          var serial = crypto.getRandomValues(new Uint8Array(16));
+          serial[0] = serial[0] & 127;
+          if (serial[0] === 0) serial[0] = 1;
+
+          var now = new Date();
+          var notBefore = new Date(now.getTime() - 24 * 3600 * 1000);
+          var notAfter = new Date(now.getTime() + days * 24 * 3600 * 1000);
+
+          var name = frontName('DoH Proxy Pro', 'DoH Proxy Front CA ' + frontHex(keyId).slice(0, 8));
+          var sigAlg = frontSeq([frontOid('1.2.840.10045.4.3.2')]);
+
+          var subtrees = domains.map(function (d) {
+            return frontSeq([frontTlv(0x82, new TextEncoder().encode(d))]);
+          });
+          var nameConstraints = frontSeq([frontTlv(0xa0, frontConcat(subtrees))]);
+
+          var extensions = [
+            frontExtension('2.5.29.19', true, frontSeq([frontBool(true), frontInteger(Uint8Array.from([0]))])),
+            frontExtension('2.5.29.15', true, frontBitString(Uint8Array.from([6]), 1)),
+            frontExtension('2.5.29.14', false, frontOctet(keyId))
+          ];
+          if (domains.length > 0) extensions.push(frontExtension('2.5.29.30', true, nameConstraints));
+
+          var tbs = frontSeq([
+            frontTlv(0xa0, frontInteger(Uint8Array.from([2]))),
+            frontInteger(serial),
+            sigAlg,
+            name,
+            frontSeq([frontUtcTime(notBefore), frontUtcTime(notAfter)]),
+            name,
+            spki,
+            frontTlv(0xa3, frontSeq(extensions))
+          ]);
+
+          var signature = new Uint8Array(await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, keyPair.privateKey, tbs));
+          var certDer = frontSeq([tbs, sigAlg, frontBitString(frontRawSignatureToDer(signature), 0)]);
+          var fingerprint = new Uint8Array(await subtle.digest('SHA-256', certDer));
+
+          return {
+            certificateLines: frontPemLines('CERTIFICATE', certDer),
+            keyLines: frontPemLines('PRIVATE KEY', pkcs8),
+            fingerprint: frontHex(fingerprint),
+            notAfter: notAfter
+          };
+        }
+
+        const FRONT_CONFIG_SOURCE = 'https://raw.githubusercontent.com/4n0nymou3/cloudflare-doh-proxy/main/configs/doh-proxy-browser-front.template.json';
+        const frontState = { certText: '', configText: '' };
+
+        function frontSetStatus(kind, message) {
+          const box = document.getElementById('frontStatus');
+          if (!box) return;
+          box.className = 'front-status' + (message ? ' is-visible' : '') +
+            (kind === 'error' ? ' is-error' : '') + (kind === 'success' ? ' is-success' : '');
+          box.textContent = message || '';
+        }
+
+        function frontDownload(filename, text, mime) {
+          const blob = new Blob([text], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+        }
+
+        function frontFormatFingerprint(hex) {
+          const up = hex.toUpperCase();
+          const parts = [];
+          for (let i = 0; i < up.length; i += 2) parts.push(up.slice(i, i + 2));
+          return parts.join(':');
+        }
+
+        function frontFormatDate(date) {
+          return date.getUTCFullYear() + '-' + frontTwo(date.getUTCMonth() + 1) + '-' + frontTwo(date.getUTCDate());
+        }
+
+        async function frontGenerate(button) {
+          const resultBox = document.getElementById('frontResult');
+          if (resultBox) resultBox.classList.remove('is-visible');
+          frontState.certText = '';
+          frontState.configText = '';
+          if (!window.crypto || !window.crypto.subtle) {
+            frontSetStatus('error', 'این مرورگر از ساخت گواهی پشتیبانی نمی‌کند. از نسخه‌ی به‌روز Chrome یا Firefox استفاده کنید و صفحه را با HTTPS باز کنید.');
+            return;
+          }
+          const originalHTML = button.innerHTML;
+          button.disabled = true;
+          button.innerHTML = '⏳ در حال ساخت...';
+          frontSetStatus('info', 'در حال دریافت قالب کانفیگ و ساخت گواهی...');
+          try {
+            let text;
+            try {
+              const response = await fetch(FRONT_CONFIG_SOURCE, { cache: 'no-store' });
+              if (!response.ok) throw new Error('HTTP ' + response.status);
+              text = await response.text();
+            } catch (fetchError) {
+              console.warn('Front config fetch failed.', fetchError);
+              frontSetStatus('error', 'دریافت قالب کانفیگ از گیت‌هاب ناموفق بود. چند لحظه بعد دوباره تلاش کنید.');
+              return;
+            }
+            text = text.split('\${workerUrl}').join(WORKER_URL);
+            text = text.split('\${workerHost}').join(WORKER_HOST);
+            const config = JSON.parse(text);
+            const domains = frontCollectDomains(config);
+            if (domains.length === 0) throw new Error('template has no front domains');
+            const days = parseInt(document.getElementById('frontDays').value, 10) || 90;
+            const result = await frontGenerateCertificate(domains, days);
+            let filled = 0;
+            config.inbounds.forEach(function (inbound) {
+              if (String(inbound.tag).indexOf('tls-decrypt') !== 0) return;
+              const entry = inbound.streamSettings.tlsSettings.certificates[0];
+              entry.certificate = result.certificateLines;
+              entry.key = result.keyLines;
+              filled++;
+            });
+            if (filled === 0) throw new Error('template has no certificate slots');
+            const nl = String.fromCharCode(10);
+            frontState.certText = result.certificateLines.join(nl) + nl;
+            frontState.configText = JSON.stringify(config, null, 2) + nl;
+            document.getElementById('frontFingerprint').textContent = frontFormatFingerprint(result.fingerprint);
+            document.getElementById('frontExpiry').textContent = 'اعتبار گواهی تا: ' + frontFormatDate(result.notAfter) + ' (' + domains.length + ' دامنه‌ی مجاز)';
+            if (resultBox) resultBox.classList.add('is-visible');
+            frontSetStatus('success', 'گواهی و کانفیگ شما ساخته شد. هر دو فایل را دانلود کنید.');
+          } catch (err) {
+            console.warn('Front certificate generation failed.', err);
+            frontSetStatus('error', 'ساخت گواهی ناموفق بود. صفحه را دوباره بارگذاری کنید و از یک مرورگر به‌روز استفاده کنید.');
+          } finally {
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+          }
+        }
+
+        document.addEventListener('click', function (event) {
+          const trigger = event.target.closest('[data-front-action]');
+          if (!trigger) return;
+          const action = trigger.getAttribute('data-front-action');
+          if (action === 'generate') {
+            frontGenerate(trigger);
+          } else if (action === 'download-cert' && frontState.certText) {
+            frontDownload('doh-proxy-front-ca.crt', frontState.certText, 'application/x-x509-ca-cert');
+          } else if (action === 'download-config' && frontState.configText) {
+            frontDownload('doh-proxy-browser-front.json', frontState.configText, 'application/json');
+          } else if (action === 'copy-config' && frontState.configText) {
+            const originalHTML = trigger.innerHTML;
+            const onDone = function () {
+              trigger.innerHTML = '✓ کپی شد!';
+              setTimeout(function () { trigger.innerHTML = originalHTML; }, 2000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(frontState.configText).then(onDone).catch(function () {
+                fallbackCopy(frontState.configText);
+                onDone();
+              });
+            } else {
+              fallbackCopy(frontState.configText);
+              onDone();
+            }
+          }
+        });
 
         document.addEventListener('DOMContentLoaded', function () {
             enhanceCodeBlocks();
