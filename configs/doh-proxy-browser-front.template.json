@@ -351,54 +351,6 @@
       }
     },
     {
-      "tag": "repack-x",
-      "protocol": "freedom",
-      "streamSettings": {
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "www.fastly.com",
-          "verifyPeerCertByName": "fromMitM,www.fastly.com,www.reddit.com,x.com",
-          "alpn": [
-            "fromMitM"
-          ],
-          "fingerprint": "chrome"
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 200,
-            "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
-          }
-        }
-      }
-    },
-    {
-      "tag": "repack-telegram",
-      "protocol": "freedom",
-      "streamSettings": {
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "www.google.com",
-          "verifyPeerCertByName": "fromMitM,telegram.org,web.telegram.org,www.google.com",
-          "alpn": [
-            "fromMitM"
-          ],
-          "fingerprint": "chrome"
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 200,
-            "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
-          }
-        }
-      }
-    },
-    {
       "tag": "tf-v6-plain",
       "protocol": "freedom",
       "streamSettings": {
@@ -921,33 +873,6 @@
         ]
       },
       {
-        "outboundTag": "repack-x",
-        "inboundTag": [
-          "tls-decrypt-h11",
-          "tls-decrypt-h2"
-        ],
-        "domain": [
-          "domain:x.com",
-          "domain:twitter.com",
-          "domain:twimg.com",
-          "domain:t.co"
-        ]
-      },
-      {
-        "outboundTag": "repack-telegram",
-        "inboundTag": [
-          "tls-decrypt-h11",
-          "tls-decrypt-h2"
-        ],
-        "domain": [
-          "domain:telegram.org",
-          "domain:t.me",
-          "domain:telegram.me",
-          "domain:telesco.pe",
-          "domain:telegram-cdn.org"
-        ]
-      },
-      {
         "outboundTag": "reject",
         "inboundTag": [
           "tls-decrypt-h11",
@@ -1048,16 +973,7 @@
           "domain:fb.watch",
           "domain:fb.gg",
           "domain:m.me",
-          "domain:oculus.com",
-          "domain:x.com",
-          "domain:twitter.com",
-          "domain:twimg.com",
-          "domain:t.co",
-          "domain:telegram.org",
-          "domain:t.me",
-          "domain:telegram.me",
-          "domain:telesco.pe",
-          "domain:telegram-cdn.org"
+          "domain:oculus.com"
         ]
       },
       {
