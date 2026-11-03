@@ -276,30 +276,61 @@ System Settings → Privacy & Security → Profiles
 
 #### Windows 10/11
 
-```
-Settings → Network & Internet → Properties
-→ DNS server assignment → Edit
-→ Preferred DNS encryption: Encrypted only (DNS over HTTPS)
-→ URL را وارد کنید
-```
+**روش پیشنهادی:** برنامه‌ی [YogaDNS](https://www.yogadns.com/) را نصب کنید، یک سرور از نوع DNS-over-HTTPS با آدرس `https://your-domain/dns-query` اضافه کنید و آن را در قوانین (Rules) برای همه‌ی دامنه‌ها انتخاب کنید.
+
+**تنظیمات داخلی ویندوز:** ویندوز DoH را بر پایه‌ی IP سرور DNS فعال می‌کند و فقط برای IPهایی کار می‌کند که آدرس DoH آن‌ها را بشناسد یا دستی برایشان ثبت شده باشد. وارد کردن آدرس این پروژه کنار IP یک سرویس دیگر (مثل `1.1.1.1`) کافی نیست و ممکن است DNS بدون رمزنگاری ارسال شود.
 
 #### Linux (systemd-resolved)
 
-1. ویرایش فایل تنظیمات:
+systemd-resolved از DoH پشتیبانی نمی‌کند (فقط DNS-over-TLS) و آدرس `https://` را در تنظیمات DNS نمی‌پذیرد. برای همین باید یک کلاینت محلی DoH اجرا شود و systemd-resolved به آن وصل شود.
+
+1. دریافت dnsproxy (از AdGuard) و نصب آن:
+```bash
+wget https://github.com/AdguardTeam/dnsproxy/releases/download/v0.86.0/dnsproxy-linux-amd64-v0.86.0.tar.gz
+tar xzf dnsproxy-linux-amd64-v0.86.0.tar.gz
+sudo install -m 755 linux-amd64/dnsproxy /usr/local/bin/dnsproxy
+```
+
+2. ساخت سرویس:
+```bash
+sudo nano /etc/systemd/system/doh-proxy-client.service
+```
+
+```ini
+[Unit]
+Description=DoH Proxy local client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/dnsproxy -l 127.0.0.1 -p 53 -u https://your-domain/dns-query -b 1.1.1.1:53
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. فعال‌سازی سرویس:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now doh-proxy-client
+```
+
+4. ویرایش فایل تنظیمات systemd-resolved:
 ```bash
 sudo nano /etc/systemd/resolved.conf
 ```
 
-2. اضافه کردن این خطوط:
 ```ini
 [Resolve]
-DNS=https://your-domain/dns-query
-DNSOverTLS=yes
+DNS=127.0.0.1
+Domains=~.
 ```
 
-3. ری‌استارت سرویس:
+5. ری‌استارت سرویس و بررسی:
 ```bash
 sudo systemctl restart systemd-resolved
+resolvectl query example.com
 ```
 
 #### macOS
