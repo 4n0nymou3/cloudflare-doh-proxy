@@ -56,6 +56,20 @@
         "skipFallback": true
       },
       {
+        "address": "fakedns",
+        "domains": [
+          "domain:google.com",
+          "domain:gstatic.com",
+          "domain:googleapis.com",
+          "domain:googleusercontent.com",
+          "domain:gmail.com",
+          "domain:googlemail.com",
+          "domain:gvt1.com",
+          "domain:gvt2.com"
+        ],
+        "skipFallback": true
+      },
+      {
         "tag": "doh-cf",
         "address": "https://cloudflare-dns.com/dns-query",
         "timeoutMs": 5000
@@ -725,6 +739,13 @@
           }
         }
       }
+    },
+    {
+      "tag": "google-static",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "216.239.38.120:443"
+      }
     }
   ],
   "burstObservatory": {
@@ -784,6 +805,48 @@
           }
         },
         "fallbackTag": "legacy-k1"
+      },
+      {
+        "tag": "gpool",
+        "selector": [
+          "tf-"
+        ],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "expected": 1,
+            "maxRTT": "14s",
+            "tolerance": 0.5,
+            "costs": [
+              {
+                "regexp": true,
+                "match": "-plain$",
+                "value": 1
+              },
+              {
+                "regexp": true,
+                "match": "-rec$",
+                "value": 9
+              },
+              {
+                "regexp": true,
+                "match": "-rec-tcp$",
+                "value": 25
+              },
+              {
+                "regexp": true,
+                "match": "-tcp-slow$",
+                "value": 49
+              },
+              {
+                "regexp": true,
+                "match": "-rec-slow$",
+                "value": 81
+              }
+            ]
+          }
+        },
+        "fallbackTag": "google-static"
       }
     ],
     "rules": [
@@ -974,6 +1037,47 @@
           "domain:fb.gg",
           "domain:m.me",
           "domain:oculus.com"
+        ]
+      },
+      {
+        "balancerTag": "gpool",
+        "inboundTag": [
+          "socks-in",
+          "http-in"
+        ],
+        "network": "tcp",
+        "protocol": [
+          "tls"
+        ],
+        "port": "443",
+        "domain": [
+          "domain:google.com",
+          "domain:gstatic.com",
+          "domain:googleapis.com",
+          "domain:googleusercontent.com",
+          "domain:gmail.com",
+          "domain:googlemail.com",
+          "domain:gvt1.com",
+          "domain:gvt2.com"
+        ]
+      },
+      {
+        "balancerTag": "gpool",
+        "inboundTag": [
+          "socks-in",
+          "http-in"
+        ],
+        "network": "tcp",
+        "port": "443",
+        "domain": [
+          "domain:google.com",
+          "domain:gstatic.com",
+          "domain:googleapis.com",
+          "domain:googleusercontent.com",
+          "domain:gmail.com",
+          "domain:googlemail.com",
+          "domain:gvt1.com",
+          "domain:gvt2.com"
         ]
       },
       {
