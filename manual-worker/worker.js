@@ -2317,16 +2317,21 @@ async function handleRequest(request) {
 
             <div class="usage-card">
                 <h3 class="card-title">💻 ویندوز ۱۰/۱۱</h3>
-                <p>Settings ← Network &amp; Internet ← Properties ← DNS server assignment ← Edit ← Preferred DNS encryption: Encrypted only (DNS over HTTPS) و آدرس بالا را وارد کنید.</p>
+                <p>• <strong>روش پیشنهادی:</strong> برنامه‌ی YogaDNS را نصب کنید، یک سرور از نوع DNS-over-HTTPS با آدرس بالا اضافه کنید و آن را در قوانین (Rules) برای همه‌ی دامنه‌ها انتخاب کنید.<br>
+                • <strong>تنظیمات داخلی ویندوز:</strong> ویندوز DoH را بر پایه‌ی IP سرور DNS فعال می‌کند و فقط برای IPهایی کار می‌کند که آدرس DoH آن‌ها را بشناسد یا دستی برایشان ثبت شده باشد. وارد کردن این آدرس کنار IP یک سرویس دیگر (مثل 1.1.1.1) کافی نیست و ممکن است DNS بدون رمزنگاری ارسال شود.</p>
             </div>
 
             <div class="usage-card">
                 <h3 class="card-title">🐧 لینوکس (systemd-resolved)</h3>
-                <p>۱. ویرایش فایل تنظیمات:</p>
+                <p>systemd-resolved از DoH پشتیبانی نمی‌کند (فقط DNS-over-TLS) و آدرس https را در تنظیمات DNS نمی‌پذیرد. برای همین باید یک کلاینت محلی DoH اجرا شود.</p>
+                <p>۱. برنامه‌ی dnsproxy (از AdGuard) را از صفحه‌ی Releases در GitHub دریافت کنید و در /usr/local/bin قرار دهید.</p>
+                <p>۲. اجرای کلاینت محلی (برای اجرای دائمی آن را به‌صورت سرویس systemd تعریف کنید):</p>
+                <code class="block-code">sudo dnsproxy -l 127.0.0.1 -p 53 -u ${workerUrl} -b 1.1.1.1:53</code>
+                <p>۳. ویرایش فایل تنظیمات:</p>
                 <code class="block-code">sudo nano /etc/systemd/resolved.conf</code>
-                <p>۲. اضافه کردن این خطوط:</p>
-                <code class="block-code">[Resolve]<br>DNS=${workerUrl}<br>DNSOverTLS=yes</code>
-                <p>۳. ری‌استارت سرویس:</p>
+                <p>۴. اضافه کردن این خطوط:</p>
+                <code class="block-code">[Resolve]<br>DNS=127.0.0.1<br>Domains=~.</code>
+                <p>۵. ری‌استارت سرویس:</p>
                 <code class="block-code">sudo systemctl restart systemd-resolved</code>
             </div>
 
