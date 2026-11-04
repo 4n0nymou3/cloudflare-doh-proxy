@@ -28,13 +28,57 @@
     "hosts": {
       "geosite:category-ads-all": "#3",
       "cloudflare-dns.com": "challenges.cloudflare.com",
-      "${workerHost}": "challenges.cloudflare.com"
+      "${workerHost}": "challenges.cloudflare.com",
+      "dns.redirect": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ]
     },
     "servers": [
       {
         "tag": "doh-proxy",
         "address": "${workerUrl}",
         "timeoutMs": 8000
+      },
+      {
+        "tag": "fronted-dns",
+        "address": "h2c://1.1.1.1/dns-query",
+        "domains": [
+          "domain:googlevideo.com",
+          "domain:youtube.com",
+          "domain:youtu.be",
+          "domain:youtube-nocookie.com",
+          "domain:ytimg.com",
+          "domain:ggpht.com",
+          "domain:yt.be",
+          "domain:youtubekids.com",
+          "full:youtubei.googleapis.com",
+          "full:yt3.googleusercontent.com",
+          "domain:instagram.com",
+          "domain:cdninstagram.com",
+          "domain:facebook.com",
+          "domain:fbcdn.net",
+          "domain:fb.com",
+          "domain:fbsbx.com",
+          "domain:facebook.net",
+          "domain:fb.me",
+          "domain:threads.net",
+          "domain:meta.com",
+          "domain:messenger.com",
+          "domain:whatsapp.com",
+          "domain:whatsapp.net",
+          "domain:wa.me",
+          "domain:threads.com",
+          "domain:ig.me",
+          "domain:igcdn.com",
+          "domain:fbcdn.com",
+          "domain:fbsbx.net",
+          "domain:fb.watch",
+          "domain:fb.gg",
+          "domain:m.me",
+          "domain:oculus.com"
+        ],
+        "timeoutMs": 6000
       },
       {
         "address": "fakedns",
@@ -332,10 +376,10 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
-            "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 2,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -356,10 +400,37 @@
         "sockopt": {
           "domainStrategy": "ForceIP",
           "happyEyeballs": {
-            "tryDelayMs": 200,
-            "prioritizeIPv6": true,
-            "interleave": 1,
-            "maxConcurrentTry": 2
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 2,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "repack-dns",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "dns.redirect:443"
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.microsoft.com",
+          "verifyPeerCertByName": "fromMitM,www.microsoft.com,www.google.com,dns.google,cloudflare-dns.com,one.one.one.one",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 2,
+            "maxConcurrentTry": 20
           }
         }
       }
@@ -869,6 +940,12 @@
           "local-dns"
         ],
         "network": "udp"
+      },
+      {
+        "inboundTag": [
+          "fronted-dns"
+        ],
+        "outboundTag": "repack-dns"
       },
       {
         "balancerTag": "pool",
