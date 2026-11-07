@@ -109,7 +109,12 @@
           "domain:gmail.com",
           "domain:googlemail.com",
           "domain:gvt1.com",
-          "domain:gvt2.com"
+          "domain:gvt2.com",
+          "domain:recaptcha.net",
+          "domain:ampproject.org",
+          "domain:translate.goog",
+          "domain:blogger.com",
+          "domain:appspot.com"
         ],
         "skipFallback": true
       },
@@ -826,7 +831,7 @@
     "pingConfig": {
       "destination": "https://www.youtube.com/generate_204",
       "connectivity": "",
-      "interval": "60s",
+      "interval": "30s",
       "sampling": 2,
       "timeout": "14s",
       "httpMethod": "GET"
@@ -1135,7 +1140,12 @@
           "domain:gmail.com",
           "domain:googlemail.com",
           "domain:gvt1.com",
-          "domain:gvt2.com"
+          "domain:gvt2.com",
+          "domain:recaptcha.net",
+          "domain:ampproject.org",
+          "domain:translate.goog",
+          "domain:blogger.com",
+          "domain:appspot.com"
         ]
       },
       {
@@ -1154,7 +1164,12 @@
           "domain:gmail.com",
           "domain:googlemail.com",
           "domain:gvt1.com",
-          "domain:gvt2.com"
+          "domain:gvt2.com",
+          "domain:recaptcha.net",
+          "domain:ampproject.org",
+          "domain:translate.goog",
+          "domain:blogger.com",
+          "domain:appspot.com"
         ]
       },
       {
