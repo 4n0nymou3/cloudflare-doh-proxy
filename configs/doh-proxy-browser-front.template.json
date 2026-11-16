@@ -11,17 +11,13 @@
   "policy": {
     "levels": {
       "0": {
-        "handshake": 6,
-        "connIdle": 300,
-        "uplinkOnly": 2,
-        "downlinkOnly": 4
-      },
-      "1": {
-        "handshake": 6,
-        "connIdle": 15,
-        "uplinkOnly": 1,
-        "downlinkOnly": 1
+        "uplinkOnly": 0,
+        "downlinkOnly": 0
       }
+    },
+    "system": {
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
     }
   },
   "dns": {
@@ -29,11 +25,11 @@
       "geosite:category-ads-all": "#3",
       "fastly.redirect": "github.githubassets.com",
       "cloudflare-dns.com": "challenges.cloudflare.com",
-      "${workerHost}": "challenges.cloudflare.com",
       "dns.redirect": [
         "1.1.1.1",
         "1.0.0.1"
-      ]
+      ],
+      "${workerHost}": "challenges.cloudflare.com"
     },
     "servers": [
       {
@@ -89,6 +85,7 @@
         ]
       },
       {
+        "tag": "fake-dns-local",
         "address": "fakedns",
         "domains": [
           "domain:ir",
@@ -103,13 +100,8 @@
           "geosite:golang",
           "geosite:python",
           "geosite:rust",
-          "full:challenges.cloudflare.com"
-        ],
-        "skipFallback": true
-      },
-      {
-        "address": "fakedns",
-        "domains": [
+          "full:challenges.cloudflare.com",
+          "full:github.githubassets.com",
           "domain:google.com",
           "domain:gstatic.com",
           "domain:googleapis.com",
@@ -125,6 +117,12 @@
           "domain:appspot.com"
         ],
         "skipFallback": true
+      },
+      {
+        "tag": "no-filter-dns",
+        "address": "h2c://1.1.1.1/dns-query",
+        "timeoutMs": 6000,
+        "finalQuery": true
       },
       {
         "tag": "doh-cf",
@@ -162,7 +160,8 @@
           "geosite:golang",
           "geosite:python",
           "geosite:rust",
-          "full:challenges.cloudflare.com"
+          "full:challenges.cloudflare.com",
+          "full:github.githubassets.com"
         ],
         "timeoutMs": 8000,
         "finalQuery": true,
@@ -176,6 +175,7 @@
   "inbounds": [
     {
       "tag": "socks-in",
+      "listen": "127.0.0.1",
       "port": 10808,
       "protocol": "socks",
       "sniffing": {
@@ -194,13 +194,14 @@
       },
       "streamSettings": {
         "sockopt": {
-          "tcpKeepAliveIdle": 60,
-          "tcpKeepAliveInterval": 30
+          "tcpKeepAliveInterval": 1,
+          "tcpKeepAliveIdle": 11
         }
       }
     },
     {
       "tag": "http-in",
+      "listen": "127.0.0.1",
       "port": 10809,
       "protocol": "http",
       "sniffing": {
@@ -211,6 +212,12 @@
           "tls"
         ],
         "routeOnly": false
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tcpKeepAliveInterval": 1,
+          "tcpKeepAliveIdle": 11
+        }
       }
     },
     {
@@ -244,7 +251,7 @@
       }
     },
     {
-      "tag": "tls-decrypt-h2",
+      "tag": "tls-decrypt-h211",
       "listen": "127.0.0.1",
       "port": 4432,
       "protocol": "tunnel",
@@ -277,11 +284,11 @@
   ],
   "outbounds": [
     {
-      "tag": "reject",
+      "tag": "block",
       "protocol": "blackhole"
     },
     {
-      "tag": "direct-tcp",
+      "tag": "direct",
       "protocol": "freedom",
       "streamSettings": {
         "sockopt": {
@@ -289,98 +296,34 @@
           "happyEyeballs": {
             "tryDelayMs": 300,
             "prioritizeIPv6": false,
-            "interleave": 4,
+            "interleave": 2,
             "maxConcurrentTry": 20
           }
         }
       }
     },
     {
-      "tag": "direct-udp",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIPv4v6"
-        }
-      }
-    },
-    {
-      "tag": "dns-out",
-      "protocol": "dns",
-      "settings": {
-        "userLevel": 1
-      }
-    },
-    {
-      "tag": "legacy-k1",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "0",
-                  "104",
-                  "1"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "114",
-                  "1"
-                ],
-                "delays": [
-                  "1"
-                ],
-                "maxSplit": "11"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "redirect-h11",
+      "tag": "redirect-out-h11",
       "protocol": "freedom",
       "settings": {
         "redirect": "127.0.0.1:4431"
       }
     },
     {
-      "tag": "redirect-h2",
+      "tag": "redirect-out-h211",
       "protocol": "freedom",
       "settings": {
         "redirect": "127.0.0.1:4432"
       }
     },
     {
-      "tag": "repack-google",
+      "tag": "tls-repack-frommitm",
       "protocol": "freedom",
       "streamSettings": {
         "security": "tls",
         "tlsSettings": {
-          "serverName": "www.google.com",
-          "verifyPeerCertByName": "fromMitM,www.google.com,dns.google,www.googlevideo.com,www.youtube.com",
+          "serverName": "fromMitM",
+          "verifyPeerCertByName": "fromMitM",
           "alpn": [
             "fromMitM"
           ],
@@ -398,31 +341,7 @@
       }
     },
     {
-      "tag": "repack-meta",
-      "protocol": "freedom",
-      "streamSettings": {
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "www.microsoft.com",
-          "verifyPeerCertByName": "fromMitM,www.google.com,www.microsoft.com,www.whatsapp.com,www.facebook.com,www.ar.meta.com,www.fb.com,www.whatsapp.net,www.atlassolutions.com,www.secure.facebook.com,www.extern.facebook.com,www.internet.org,www.oculus.com,www.wit.ai,www.facebook-dns.com,www.instagram.com,www.meta.com,www.external-disputes.meta.com,www.fbe2e.com,www.cloud.x2p.facebook.net,www.secure.latest.facebook.com",
-          "alpn": [
-            "fromMitM"
-          ],
-          "fingerprint": "chrome"
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 2,
-            "maxConcurrentTry": 20
-          }
-        }
-      }
-    },
-    {
-      "tag": "repack-dns",
+      "tag": "tls-repack-dns",
       "protocol": "freedom",
       "settings": {
         "redirect": "dns.redirect:443"
@@ -449,7 +368,31 @@
       }
     },
     {
-      "tag": "repack-fastly",
+      "tag": "tls-repack-google",
+      "protocol": "freedom",
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.google.com",
+          "verifyPeerCertByName": "fromMitM,www.google.com,dns.google,www.googlevideo.com,www.youtube.com",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 2,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "tls-repack-fastly",
       "protocol": "freedom",
       "settings": {
         "redirect": "fastly.redirect:443"
@@ -476,13 +419,13 @@
       }
     },
     {
-      "tag": "repack-frommitm",
+      "tag": "tls-repack-meta",
       "protocol": "freedom",
       "streamSettings": {
         "security": "tls",
         "tlsSettings": {
-          "serverName": "fromMitM",
-          "verifyPeerCertByName": "fromMitM",
+          "serverName": "www.microsoft.com",
+          "verifyPeerCertByName": "fromMitM,www.google.com,www.microsoft.com,www.whatsapp.com,www.facebook.com,www.ar.meta.com,www.fb.com,www.whatsapp.net,www.atlassolutions.com,www.secure.facebook.com,www.extern.facebook.com,www.internet.org,www.oculus.com,www.wit.ai,www.facebook-dns.com,www.instagram.com,www.meta.com,www.external-disputes.meta.com,www.fbe2e.com,www.cloud.x2p.facebook.net,www.secure.latest.facebook.com",
           "alpn": [
             "fromMitM"
           ],
@@ -500,516 +443,25 @@
       }
     },
     {
-      "tag": "tf-v6-plain",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        }
-      }
-    },
-    {
-      "tag": "tf-v6-rec",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v6-rec-tcp",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "60-200"
-                ],
-                "delays": [
-                  "10-20"
-                ],
-                "maxSplit": "8-16"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v6-tcp-slow",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "40-120"
-                ],
-                "delays": [
-                  "120-300"
-                ],
-                "maxSplit": "5-8"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v6-rec-slow",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": true,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "200-500"
-                ],
-                "delays": [
-                  "150-400"
-                ],
-                "maxSplit": "4-6"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v4-plain",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        }
-      }
-    },
-    {
-      "tag": "tf-v4-rec",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v4-rec-tcp",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "60-200"
-                ],
-                "delays": [
-                  "10-20"
-                ],
-                "maxSplit": "8-16"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v4-tcp-slow",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "40-120"
-                ],
-                "delays": [
-                  "120-300"
-                ],
-                "maxSplit": "5-8"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "tf-v4-rec-slow",
-      "protocol": "freedom",
-      "streamSettings": {
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        },
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "tlshello",
-                "lengths": [
-                  "40-90",
-                  "1-2"
-                ],
-                "delays": [
-                  "0"
-                ],
-                "maxSplit": "0"
-              }
-            },
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "200-500"
-                ],
-                "delays": [
-                  "150-400"
-                ],
-                "maxSplit": "4-6"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "tag": "http-split",
-      "protocol": "freedom",
-      "streamSettings": {
-        "finalmask": {
-          "tcp": [
-            {
-              "type": "fragment",
-              "settings": {
-                "packets": "1-1",
-                "lengths": [
-                  "1-6"
-                ],
-                "delays": [
-                  "50-200"
-                ],
-                "maxSplit": "4-8"
-              }
-            }
-          ]
-        },
-        "sockopt": {
-          "domainStrategy": "ForceIP",
-          "happyEyeballs": {
-            "tryDelayMs": 300,
-            "prioritizeIPv6": false,
-            "interleave": 4,
-            "maxConcurrentTry": 20
-          }
-        }
-      }
-    },
-    {
-      "tag": "google-static",
-      "protocol": "freedom",
+      "tag": "dns-out",
+      "protocol": "dns",
       "settings": {
-        "redirect": "216.239.38.120:443"
+        "userLevel": 0
       }
     }
   ],
-  "burstObservatory": {
-    "subjectSelector": [
-      "tf-"
-    ],
-    "pingConfig": {
-      "destination": "https://www.youtube.com/generate_204",
-      "connectivity": "",
-      "interval": "30s",
-      "sampling": 2,
-      "timeout": "14s",
-      "httpMethod": "GET"
-    }
-  },
   "routing": {
     "domainStrategy": "IPOnDemand",
-    "balancers": [
-      {
-        "tag": "pool",
-        "selector": [
-          "tf-"
-        ],
-        "strategy": {
-          "type": "leastLoad",
-          "settings": {
-            "expected": 1,
-            "maxRTT": "14s",
-            "tolerance": 0.5,
-            "costs": [
-              {
-                "regexp": true,
-                "match": "-plain$",
-                "value": 1
-              },
-              {
-                "regexp": true,
-                "match": "-rec$",
-                "value": 9
-              },
-              {
-                "regexp": true,
-                "match": "-rec-tcp$",
-                "value": 25
-              },
-              {
-                "regexp": true,
-                "match": "-tcp-slow$",
-                "value": 49
-              },
-              {
-                "regexp": true,
-                "match": "-rec-slow$",
-                "value": 81
-              }
-            ]
-          }
-        },
-        "fallbackTag": "legacy-k1"
-      },
-      {
-        "tag": "gpool",
-        "selector": [
-          "tf-"
-        ],
-        "strategy": {
-          "type": "leastLoad",
-          "settings": {
-            "expected": 1,
-            "maxRTT": "14s",
-            "tolerance": 0.5,
-            "costs": [
-              {
-                "regexp": true,
-                "match": "-plain$",
-                "value": 1
-              },
-              {
-                "regexp": true,
-                "match": "-rec$",
-                "value": 9
-              },
-              {
-                "regexp": true,
-                "match": "-rec-tcp$",
-                "value": 25
-              },
-              {
-                "regexp": true,
-                "match": "-tcp-slow$",
-                "value": 49
-              },
-              {
-                "regexp": true,
-                "match": "-rec-slow$",
-                "value": 81
-              }
-            ]
-          }
-        },
-        "fallbackTag": "google-static"
-      }
-    ],
     "rules": [
       {
-        "outboundTag": "reject",
+        "port": 53,
+        "outboundTag": "dns-out"
+      },
+      {
+        "outboundTag": "block",
         "domain": [
           "geosite:category-ads-all"
         ]
-      },
-      {
-        "outboundTag": "direct-tcp",
-        "inboundTag": [
-          "local-dns"
-        ],
-        "network": "tcp"
-      },
-      {
-        "outboundTag": "direct-udp",
-        "inboundTag": [
-          "local-dns"
-        ],
-        "network": "udp"
-      },
-      {
-        "inboundTag": [
-          "fronted-dns"
-        ],
-        "outboundTag": "repack-dns"
       },
       {
         "inboundTag": [
@@ -1019,17 +471,25 @@
           "doh-ip6",
           "doh-gg"
         ],
-        "balancerTag": "pool"
+        "outboundTag": "direct"
       },
       {
-        "outboundTag": "dns-out",
-        "port": "53"
+        "inboundTag": [
+          "fronted-dns"
+        ],
+        "outboundTag": "tls-repack-dns"
+      },
+      {
+        "inboundTag": [
+          "no-filter-dns"
+        ],
+        "outboundTag": "tls-repack-dns"
       },
       {
         "domain": [
           "geosite:private"
         ],
-        "outboundTag": "direct-tcp",
+        "outboundTag": "direct",
         "ruleTag": "bypass-domain"
       },
       {
@@ -1039,26 +499,26 @@
         "domain": [
           "domain:googlevideo.com"
         ],
-        "outboundTag": "repack-google"
+        "outboundTag": "tls-repack-google"
       },
       {
         "inboundTag": [
           "tls-decrypt-h11"
         ],
-        "outboundTag": "reject"
+        "outboundTag": "block"
       },
       {
         "inboundTag": [
-          "tls-decrypt-h2"
+          "tls-decrypt-h211"
         ],
         "domain": [
           "geosite:google"
         ],
-        "outboundTag": "repack-google"
+        "outboundTag": "tls-repack-google"
       },
       {
         "inboundTag": [
-          "tls-decrypt-h2"
+          "tls-decrypt-h211"
         ],
         "domain": [
           "geosite:fastly",
@@ -1066,31 +526,31 @@
           "geosite:cnn",
           "domain:buzzfeed.com"
         ],
-        "outboundTag": "repack-fastly"
+        "outboundTag": "tls-repack-fastly"
       },
       {
         "inboundTag": [
-          "tls-decrypt-h2"
+          "tls-decrypt-h211"
         ],
         "domain": [
           "geosite:meta"
         ],
-        "outboundTag": "repack-meta"
+        "outboundTag": "tls-repack-meta"
       },
       {
         "inboundTag": [
-          "tls-decrypt-h2"
+          "tls-decrypt-h211"
         ],
         "ip": [
           "geoip:fastly"
         ],
-        "outboundTag": "repack-fastly"
+        "outboundTag": "tls-repack-fastly"
       },
       {
         "inboundTag": [
-          "tls-decrypt-h2"
+          "tls-decrypt-h211"
         ],
-        "outboundTag": "reject"
+        "outboundTag": "block"
       },
       {
         "network": "tcp",
@@ -1098,7 +558,7 @@
         "domain": [
           "domain:googlevideo.com"
         ],
-        "outboundTag": "redirect-h11"
+        "outboundTag": "redirect-out-h11"
       },
       {
         "network": "tcp",
@@ -1111,7 +571,7 @@
           "geosite:cnn",
           "domain:buzzfeed.com"
         ],
-        "outboundTag": "redirect-h2"
+        "outboundTag": "redirect-out-h211"
       },
       {
         "network": "tcp",
@@ -1119,165 +579,45 @@
         "ip": [
           "geoip:fastly"
         ],
-        "outboundTag": "redirect-h2"
+        "outboundTag": "redirect-out-h211"
       },
       {
-        "outboundTag": "reject",
         "ip": [
-          "10.10.34.0/24",
-          "2001:4188:2:600::/64"
-        ]
+          "10.10.34.34/24",
+          "2001:4188:2:600:10:10:34:34/112"
+        ],
+        "outboundTag": "block",
+        "ruleTag": "block-ip"
       },
       {
-        "outboundTag": "direct-tcp",
-        "network": "tcp",
-        "domain": [
-          "domain:ir",
-          "geosite:private",
-          "geosite:category-ir",
-          "geosite:xai",
-          "geosite:openai",
-          "geosite:google-deepmind",
-          "geosite:anthropic",
-          "geosite:github",
-          "geosite:microsoft",
-          "geosite:golang",
-          "geosite:python",
-          "geosite:rust"
-        ]
-      },
-      {
-        "outboundTag": "direct-udp",
-        "network": "udp",
-        "domain": [
-          "domain:ir",
-          "geosite:private",
-          "geosite:category-ir",
-          "geosite:xai",
-          "geosite:openai",
-          "geosite:google-deepmind",
-          "geosite:anthropic",
-          "geosite:github",
-          "geosite:microsoft",
-          "geosite:golang",
-          "geosite:python",
-          "geosite:rust"
-        ]
-      },
-      {
-        "outboundTag": "direct-tcp",
-        "network": "tcp",
-        "ip": [
-          "geoip:private",
-          "geoip:ir"
-        ]
-      },
-      {
-        "outboundTag": "direct-udp",
-        "network": "udp",
-        "ip": [
-          "geoip:private",
-          "geoip:ir"
-        ]
-      },
-      {
-        "outboundTag": "reject",
+        "outboundTag": "block",
         "network": "udp",
         "protocol": [
           "quic"
         ]
       },
       {
-        "outboundTag": "reject",
+        "outboundTag": "block",
         "network": "udp",
         "port": "443"
       },
       {
-        "outboundTag": "direct-udp",
-        "network": "udp"
-      },
-      {
-        "balancerTag": "gpool",
-        "inboundTag": [
-          "socks-in",
-          "http-in"
+        "ip": [
+          "geoip:private"
         ],
-        "network": "tcp",
-        "protocol": [
-          "tls"
+        "outboundTag": "direct",
+        "ruleTag": "bypass-ip"
+      },
+      {
+        "ip": [
+          "0.0.0.0/0",
+          "::/0"
         ],
-        "port": "443",
-        "domain": [
-          "domain:google.com",
-          "domain:gstatic.com",
-          "domain:googleapis.com",
-          "domain:googleusercontent.com",
-          "domain:gmail.com",
-          "domain:googlemail.com",
-          "domain:gvt1.com",
-          "domain:gvt2.com",
-          "domain:recaptcha.net",
-          "domain:ampproject.org",
-          "domain:translate.goog",
-          "domain:blogger.com",
-          "domain:appspot.com"
-        ]
+        "outboundTag": "direct"
       },
       {
-        "balancerTag": "gpool",
-        "inboundTag": [
-          "socks-in",
-          "http-in"
-        ],
-        "network": "tcp",
-        "port": "443",
-        "domain": [
-          "domain:google.com",
-          "domain:gstatic.com",
-          "domain:googleapis.com",
-          "domain:googleusercontent.com",
-          "domain:gmail.com",
-          "domain:googlemail.com",
-          "domain:gvt1.com",
-          "domain:gvt2.com",
-          "domain:recaptcha.net",
-          "domain:ampproject.org",
-          "domain:translate.goog",
-          "domain:blogger.com",
-          "domain:appspot.com"
-        ]
-      },
-      {
-        "balancerTag": "pool",
-        "network": "tcp",
-        "protocol": [
-          "tls"
-        ]
-      },
-      {
-        "balancerTag": "pool",
-        "network": "tcp",
-        "port": "443"
-      },
-      {
-        "outboundTag": "http-split",
-        "network": "tcp",
-        "protocol": [
-          "http"
-        ]
-      },
-      {
-        "outboundTag": "http-split",
-        "network": "tcp",
-        "port": "80"
-      },
-      {
-        "outboundTag": "direct-tcp",
-        "network": "tcp"
-      },
-      {
-        "outboundTag": "reject",
-        "port": "0-65535"
+        "port": "0-65535",
+        "outboundTag": "block"
       }
     ]
   },
