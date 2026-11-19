@@ -48,6 +48,7 @@ DoH Proxy Pro یک سرویس DNS over HTTPS پیشرفته است که با ا�
 #### 🔒 حریم خصوصی و امنیت پیشرفته
 - **DNS Padding (RFC 8467)**: پیاده‌سازی استاندارد و واقعی با OPT Record کامل برای جلوگیری از Traffic Analysis
 - **ECS Stripping پیشرفته**: پارس و حذف واقعی EDNS Client Subnet از OPT Record برای جلوگیری از نشت IP
+- **DNSSEC**: آدرس جداگانه‌ی `/dnssec` که فقط از سرورهای upstream دارای اعتبارسنجی DNSSEC (Cloudflare، Google، Quad9، NextDNS) پاسخ می‌گیرد و بیت CD (غیرفعال‌سازی اعتبارسنجی) را از Query حذف می‌کند
 - **Enhanced Header Randomization**: تصادفی‌سازی User-Agent، Accept و افزودن تصادفی یکی از Header های اضافه (X-Request-ID, X-Client-Version, Accept-Language, Sec-CH-UA) به هر درخواست
 - **X-Forwarded-For تصادفی**: افزودن احتمالی یک IP تصادفی به Header ها برای کاهش قابلیت ردیابی
 
@@ -525,6 +526,9 @@ if (negativeDnsCache.size > 2000) {
 
 ### ECS Stripping چیست؟
 پارس و حذف واقعی EDNS Client Subnet از OPT Record در Query ها که از نشت اطلاعات IP شما به سرورهای DNS جلوگیری می‌کند. این پیاده‌سازی ساختار باینری پیام DNS را تجزیه کرده و option code 8 را به طور دقیق شناسایی و حذف می‌کند.
+
+### DNSSEC چیست و آدرس /dnssec چه فرقی دارد؟
+DNSSEC امضای دیجیتال روی پاسخ‌های DNS است تا دست‌کاری یا جعل پاسخ در مسیر سرور upstream تا سرور اصلی دامنه قابل تشخیص باشد. اعتبارسنجی را خود سرورهای upstream انجام می‌دهند، نه Worker. آدرس `/dnssec` همان سرویس است، اما فقط از سرورهایی استفاده می‌کند که اعتبارسنجی DNSSEC انجام می‌دهند (Cloudflare، Google، Quad9، NextDNS)، بیت CD را از Query حذف می‌کند و هرگز به سرورهای بدون اعتبارسنجی برنمی‌گردد. دامنه‌ای که امضای نامعتبر دارد در این حالت resolve نمی‌شود و تعداد سرورهای این حالت از آدرس `/dns-query` کمتر است. کش این حالت از کش حالت معمولی جداست.
 
 ### Negative Caching چیست؟
 Cache کردن پاسخ‌های NXDOMAIN (دامنه وجود ندارد) برای 300 ثانیه تا از Query های تکراری برای دامنه‌های نامعتبر جلوگیری شود.
