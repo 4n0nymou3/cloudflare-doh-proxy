@@ -217,6 +217,23 @@ const CIRCUIT_BREAKER_TIMEOUT = 60000;
 const NEGATIVE_CACHE_TTL = 300;
 const DNS_PADDING_ENABLED = true;
 const ECS_STRIPPING_ENABLED = true;
+const DNSSEC_PROVIDER_HOSTS = [
+  'cloudflare-dns.com',
+  'mozilla.cloudflare-dns.com',
+  'security.cloudflare-dns.com',
+  'family.cloudflare-dns.com',
+  'dns64.cloudflare-dns.com',
+  'brave.cloudflare-dns.com',
+  '1.1.1.1',
+  '1.0.0.1',
+  'dns.google',
+  '8888.google',
+  'dns64.dns.google',
+  'dns.quad9.net',
+  'dns9.quad9.net',
+  'dns11.quad9.net',
+  'dns.nextdns.io'
+];
 
 const dnsCache = new Map();
 const negativeDnsCache = new Map();
@@ -343,20 +360,52 @@ function calculateProviderScore(provider, clientRegion = 'global') {
   return Math.max(0, Math.min(100, totalScore));
 }
 
-function selectBestProviders(count, clientRegion = 'global') {
-  const healthyProviders = UPSTREAM_DNS_PROVIDERS.filter(p =>
+function isDnssecProvider(provider) {
+  if (provider.dnssec === undefined) {
+    let host = '';
+    try {
+      host = new URL(provider.url).hostname;
+    } catch (e) {
+      host = '';
+    }
+    provider.dnssec = DNSSEC_PROVIDER_HOSTS.includes(host);
+  }
+  return provider.dnssec;
+}
+
+function getProviderPool(dnssecMode) {
+  if (!dnssecMode) return UPSTREAM_DNS_PROVIDERS;
+  return UPSTREAM_DNS_PROVIDERS.filter(isDnssecProvider);
+}
+
+function enforceDnssecQuery(dnsQuery) {
+  try {
+    const view = new Uint8Array(dnsQuery);
+    if (view.length < 12) return dnsQuery;
+    if ((view[3] & 0x10) === 0) return dnsQuery;
+    const copy = new Uint8Array(view);
+    copy[3] = copy[3] & 0xEF;
+    return copy.buffer;
+  } catch (e) {
+    return dnsQuery;
+  }
+}
+
+function selectBestProviders(count, clientRegion = 'global', dnssecMode = false) {
+  const pool = getProviderPool(dnssecMode);
+  const healthyProviders = pool.filter(p =>
     p.healthScore > 25 &&
     p.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD &&
     checkCircuitBreaker(p)
   );
 
   if (healthyProviders.length === 0) {
-    UPSTREAM_DNS_PROVIDERS.forEach(p => {
+    pool.forEach(p => {
       p.healthScore = 100;
       p.consecutiveFailures = 0;
       p.circuitState = 'closed';
     });
-    return UPSTREAM_DNS_PROVIDERS.slice(0, count);
+    return pool.slice(0, count);
   }
 
   const scoredProviders = healthyProviders.map(provider => ({
@@ -652,11 +701,11 @@ function buildEnhancedHeaders(baseHeaders) {
   return headers;
 }
 
-async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global') {
+async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global', dnssecMode = false) {
   let processedQuery = applyDnsPadding(dnsQuery);
   processedQuery = stripECS(processedQuery);
 
-  const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT, clientRegion);
+  const selectedProviders = selectBestProviders(PARALLEL_RACING_COUNT, clientRegion, dnssecMode);
 
   const racePromises = selectedProviders.map(async (provider) => {
     const startTime = Date.now();
@@ -714,8 +763,8 @@ async function raceMultipleProviders(dnsQuery, headers, clientRegion = 'global')
   return Promise.any(racePromises);
 }
 
-async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [], clientRegion = 'global') {
-  const availableProviders = UPSTREAM_DNS_PROVIDERS
+async function fallbackProviderRequest(dnsQuery, headers, excludeProviders = [], clientRegion = 'global', dnssecMode = false) {
+  const availableProviders = getProviderPool(dnssecMode)
     .filter(p =>
       !excludeProviders.includes(p.url) &&
       p.healthScore > 15 &&
@@ -903,7 +952,7 @@ function buildCORSHeaders(origin) {
   };
 }
 
-async function handleDNSQuery(request) {
+async function handleDNSQuery(request, dnssecMode = false) {
   const url = new URL(request.url);
   const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
   const cfData = request.cf || {};
@@ -993,7 +1042,9 @@ async function handleDNSQuery(request) {
     performHealthCheck().catch(() => {});
     performAdaptiveLearning().catch(() => {});
 
-    const cacheKey = getCacheKey(dnsQuery);
+    if (dnssecMode) dnsQuery = enforceDnssecQuery(dnsQuery);
+
+    const cacheKey = (dnssecMode ? 'sec_' : '') + getCacheKey(dnsQuery);
 
     const negativeCached = checkNegativeCache(cacheKey);
     if (negativeCached) {
@@ -1043,8 +1094,8 @@ async function handleDNSQuery(request) {
       }
     }
 
-    const requestPromise = raceMultipleProviders(dnsQuery, request.headers, clientRegion)
-      .catch(() => fallbackProviderRequest(dnsQuery, request.headers, [], clientRegion));
+    const requestPromise = raceMultipleProviders(dnsQuery, request.headers, clientRegion, dnssecMode)
+      .catch(() => fallbackProviderRequest(dnsQuery, request.headers, [], clientRegion, dnssecMode));
 
     pendingRequests.set(cacheKey, requestPromise);
 
@@ -1406,6 +1457,10 @@ async function handleRequest(request) {
     return handleDNSQuery(request);
   }
 
+  if (path === '/dnssec') {
+    return handleDNSQuery(request, true);
+  }
+
   if (path === '/apple') {
     const profile = generateAppleProfile(request.url);
     return new Response(profile, {
@@ -1424,6 +1479,7 @@ async function handleRequest(request) {
 
   const baseUrl = new URL(request.url);
   const workerUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dns-query`;
+  const dnssecUrl = `${baseUrl.protocol}//${baseUrl.hostname}/dnssec`;
   const workerHost = baseUrl.hostname;
   const appleProfileUrl = `${baseUrl.protocol}//${baseUrl.hostname}/apple`;
   const statsUrl = `${baseUrl.protocol}//${baseUrl.hostname}/stats`;
@@ -2152,6 +2208,15 @@ async function handleRequest(request) {
             <button class="btn btn-primary" data-copy-target="dohUrl">📋 کپی آدرس</button>
         </div>
 
+        <h2 class="section-title">🔐 آدرس سرویس با DNSSEC</h2>
+        <div class="info-box">
+            این آدرس فقط از سرورهای upstream استفاده می‌کند که پاسخ‌ها را با DNSSEC اعتبارسنجی می‌کنند (Cloudflare، Google، Quad9، NextDNS). اگر امضای DNSSEC یک دامنه نامعتبر باشد، آن دامنه resolve نمی‌شود. تعداد سرورهای این حالت از آدرس بالا کمتر است؛ در برنامه‌هایی که فقط یک آدرس DoH می‌گیرند، یکی از این دو آدرس را وارد کنید.
+        </div>
+        <div class="url-container">
+            <div class="url-box" id="dohUrlDnssec">${dnssecUrl}</div>
+            <button class="btn btn-primary" data-copy-target="dohUrlDnssec">📋 کپی آدرس</button>
+        </div>
+
         <section id="features">
             <h2 class="section-title">✨ ویژگی‌های پیشرفته</h2>
             <div class="feature-grid">
@@ -2182,6 +2247,10 @@ async function handleRequest(request) {
                 <div class="feature-item">
                     <div class="feature-icon">🚫</div>
                     <div class="feature-text">ECS Stripping — حذف واقعی EDNS Client Subnet از OPT Record</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔐</div>
+                    <div class="feature-text">DNSSEC — آدرس جداگانه‌ی /dnssec که فقط از سرورهای دارای اعتبارسنجی DNSSEC استفاده می‌کند</div>
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">💾</div>
