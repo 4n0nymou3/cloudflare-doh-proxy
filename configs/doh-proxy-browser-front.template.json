@@ -512,7 +512,26 @@
           "tls-decrypt-h211"
         ],
         "domain": [
-          "geosite:google"
+          "geosite:google",
+          "domain:google.com",
+          "domain:gstatic.com",
+          "domain:googleapis.com",
+          "domain:googleusercontent.com",
+          "domain:youtube.com",
+          "domain:youtu.be",
+          "domain:youtube-nocookie.com",
+          "domain:ytimg.com",
+          "domain:ggpht.com",
+          "domain:yt.be",
+          "domain:youtubekids.com",
+          "domain:gvt1.com",
+          "domain:gvt2.com",
+          "domain:blogger.com",
+          "domain:blogspot.com",
+          "domain:appspot.com",
+          "domain:gmail.com",
+          "domain:googlemail.com",
+          "domain:android.com"
         ],
         "outboundTag": "tls-repack-google"
       },
@@ -524,6 +543,13 @@
           "geosite:fastly",
           "geosite:reddit",
           "geosite:cnn",
+          "domain:fastly.net",
+          "domain:fastly.com",
+          "domain:reddit.com",
+          "domain:redd.it",
+          "domain:redditmedia.com",
+          "domain:redditstatic.com",
+          "domain:cnn.com",
           "domain:buzzfeed.com"
         ],
         "outboundTag": "tls-repack-fastly"
@@ -533,7 +559,30 @@
           "tls-decrypt-h211"
         ],
         "domain": [
-          "geosite:meta"
+          "geosite:meta",
+          "domain:instagram.com",
+          "domain:cdninstagram.com",
+          "domain:facebook.com",
+          "domain:fbcdn.net",
+          "domain:fb.com",
+          "domain:fbsbx.com",
+          "domain:facebook.net",
+          "domain:fb.me",
+          "domain:threads.net",
+          "domain:threads.com",
+          "domain:meta.com",
+          "domain:messenger.com",
+          "domain:whatsapp.com",
+          "domain:whatsapp.net",
+          "domain:wa.me",
+          "domain:ig.me",
+          "domain:igcdn.com",
+          "domain:fbcdn.com",
+          "domain:fbsbx.net",
+          "domain:fb.watch",
+          "domain:fb.gg",
+          "domain:m.me",
+          "domain:oculus.com"
         ],
         "outboundTag": "tls-repack-meta"
       },
