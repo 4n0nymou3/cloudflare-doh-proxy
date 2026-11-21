@@ -10,7 +10,7 @@ const WORKER_HOST_PLACEHOLDER = "${workerHost}";
 const REQUIRED_DOH_ENTRY = {
   tag: "doh-proxy",
   address: WORKER_URL_PLACEHOLDER,
-  timeoutMs: 8000
+  timeoutMs: 5000
 };
 
 const REQUIRED_REMARKS = "🛡️ DoH Proxy Pro + Fragment";
