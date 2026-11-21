@@ -373,8 +373,7 @@ function enforceDohEntry(config) {
   for (const server of servers) {
     const isWorkerEntry =
       isWorkerAddress(server) ||
-      (isPlainObject(server) &&
-        (server.tag === "doh-proxy" || isWorkerAddress(server.address)));
+      (isPlainObject(server) && isWorkerAddress(server.address));
 
     if (isWorkerEntry) {
       if (
@@ -389,6 +388,38 @@ function enforceDohEntry(config) {
     }
 
     kept.push(server);
+  }
+
+  if (renamedTags.size === 0) {
+    const httpsTags = new Set();
+
+    for (const server of kept) {
+      if (
+        isPlainObject(server) &&
+        typeof server.tag === "string" &&
+        server.tag !== REQUIRED_DOH_ENTRY.tag &&
+        typeof server.address === "string" &&
+        /^https(\+local)?:\/\//i.test(server.address)
+      ) {
+        httpsTags.add(server.tag);
+      }
+    }
+
+    if (httpsTags.size === 1) {
+      for (const tag of httpsTags) {
+        renamedTags.add(tag);
+      }
+    }
+  }
+
+  for (const server of kept) {
+    if (
+      isPlainObject(server) &&
+      typeof server.tag === "string" &&
+      renamedTags.has(server.tag)
+    ) {
+      server.tag = REQUIRED_DOH_ENTRY.tag;
+    }
   }
 
   dns.servers = [{ ...REQUIRED_DOH_ENTRY }, ...kept];
@@ -517,7 +548,7 @@ function resolveVersion(candidateVersion, baseVersion) {
   return chosen;
 }
 
-function validateUniqueTags(items, label, allowNonObjects) {
+function validateUniqueTags(items, label, allowNonObjects, allowDuplicates = false) {
   const tags = new Set();
 
   for (let i = 0; i < items.length; i++) {
@@ -536,7 +567,7 @@ function validateUniqueTags(items, label, allowNonObjects) {
         fail(`عضو ${i} در بخش ${label} دارای tag نامعتبر است.`);
       }
 
-      if (tags.has(item.tag)) {
+      if (tags.has(item.tag) && !allowDuplicates) {
         fail(`tag تکراری در بخش ${label}: ${item.tag}`);
       }
 
@@ -584,7 +615,7 @@ function validateConfig(config) {
     fail("بخش dns.servers معتبر نیست.");
   }
 
-  const dnsTags = validateUniqueTags(config.dns.servers, "dns.servers", true);
+  const dnsTags = validateUniqueTags(config.dns.servers, "dns.servers", true, true);
 
   if (!dnsTags.has("doh-proxy")) {
     fail("سرور doh-proxy در dns.servers وجود ندارد.");
