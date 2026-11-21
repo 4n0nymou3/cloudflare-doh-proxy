@@ -16,13 +16,17 @@
       "cloudflare-dns.com": [
         "cloudflare.com"
       ],
+      "dns.redirect": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
       "${workerHost}": "challenges.cloudflare.com"
     },
     "servers": [
       {
         "tag": "doh-proxy",
         "address": "${workerUrl}",
-        "timeoutMs": 8000
+        "timeoutMs": 5000
       },
       {
         "address": "https://dns.google/dns-query",
@@ -41,12 +45,16 @@
         "skipFallback": false
       },
       {
-        "address": "8.8.8.8",
+        "tag": "fronted-dns",
+        "address": "h2c://1.1.1.1/dns-query",
         "domains": [
           "full:cloudflare.com",
-          "full:challenges.cloudflare.com"
+          "full:challenges.cloudflare.com",
+          "geosite:google",
+          "geosite:meta"
         ],
-        "skipFallback": false
+        "skipFallback": false,
+        "timeoutMs": 6000
       },
       {
         "tag": "local-dns",
@@ -58,7 +66,7 @@
         ],
         "skipFallback": true,
         "finalQuery": true,
-        "timeoutMs": 8000
+        "timeoutMs": 5000
       }
     ],
     "queryStrategy": "UseSystem",
@@ -642,6 +650,33 @@
       "tag": "direct"
     },
     {
+      "tag": "tls-repack-dns",
+      "protocol": "freedom",
+      "settings": {
+        "redirect": "dns.redirect:443"
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "www.microsoft.com",
+          "verifyPeerCertByName": "fromMitM,www.microsoft.com,www.google.com,dns.google,cloudflare-dns.com,one.one.one.one",
+          "alpn": [
+            "fromMitM"
+          ],
+          "fingerprint": "chrome"
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 2,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
       "protocol": "freedom",
       "streamSettings": {
         "sockopt": {
@@ -781,7 +816,7 @@
             ]
           }
         },
-        "fallbackTag": "tf-v4-rec"
+        "fallbackTag": "tf-v4-fa"
       }
     ],
     "rules": [
@@ -798,6 +833,12 @@
           "doh-proxy"
         ],
         "balancerTag": "pool"
+      },
+      {
+        "inboundTag": [
+          "fronted-dns"
+        ],
+        "outboundTag": "tls-repack-dns"
       },
       {
         "inboundTag": [
